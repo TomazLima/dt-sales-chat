@@ -334,6 +334,71 @@
     #btn-send:disabled { background: #BDBDBD; cursor: default; transform: none; }
     #btn-send svg { width: 18px; height: 18px; fill: #fff; }
 
+    /* ── PAINEL DE HISTÓRICO ── */
+    #btn-history {
+      background: rgba(255,255,255,.2);
+      border: 1px solid rgba(255,255,255,.4);
+      color: #fff; padding: 5px 12px;
+      border-radius: 20px; font-size: 12px;
+      font-family: inherit; cursor: pointer;
+      transition: background .2s;
+    }
+    #btn-history:hover { background: rgba(255,255,255,.35); }
+
+    #history-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.35);
+      z-index: 200;
+    }
+    #history-overlay.open { display: block; }
+
+    #history-panel {
+      position: fixed; top: 0; right: -360px;
+      width: 340px; height: 100%;
+      background: var(--surface);
+      box-shadow: -4px 0 20px rgba(0,0,0,.12);
+      display: flex; flex-direction: column;
+      z-index: 201;
+      transition: right .28s ease;
+    }
+    #history-panel.open { right: 0; }
+
+    .history-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .history-header h3 { font-size: 15px; font-weight: 600; }
+    #btn-close-history {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; color: var(--text-muted); line-height: 1;
+    }
+    #btn-close-history:hover { color: var(--text); }
+
+    #history-list {
+      flex: 1; overflow-y: auto;
+      padding: 12px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .history-empty {
+      text-align: center; color: var(--text-muted);
+      font-size: 13px; padding: 40px 16px;
+    }
+    .history-session {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+    .history-session:hover { border-color: var(--magenta); background: #FFF5FA; }
+    .history-session-date { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .history-session-preview { font-size: 13px; color: var(--text); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .history-session-count { font-size: 11px; color: var(--magenta); margin-top: 4px; }
+    #history-loading { text-align: center; color: var(--text-muted); font-size: 13px; padding: 40px 16px; }
+
     /* Toast de erro */
     #toast {
       position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
@@ -366,6 +431,7 @@
   </div>
   <div class="header-right">
     <span id="header-user"></span>
+    <button id="btn-history" hidden>🕐 Histórico</button>
     <button id="btn-new-chat" hidden>↺ Nova conversa</button>
     <button id="btn-logout" hidden>Sair</button>
   </div>
@@ -427,6 +493,16 @@
       <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
     </button>
   </div>
+</div>
+
+<!-- ── HISTÓRICO PANEL ────────────────────────────────────── -->
+<div id="history-overlay"></div>
+<div id="history-panel">
+  <div class="history-header">
+    <h3>Histórico de conversas</h3>
+    <button id="btn-close-history">✕</button>
+  </div>
+  <div id="history-list"></div>
 </div>
 
 <!-- Toast -->
@@ -520,6 +596,7 @@
     currentUser = null;
     document.getElementById('chat-screen').hidden = true;
     document.getElementById('login-screen').hidden = false;
+    document.getElementById('btn-history').hidden = true;
     document.getElementById('btn-new-chat').hidden = true;
     document.getElementById('btn-logout').hidden = true;
     document.getElementById('header-user').textContent = '';
@@ -536,6 +613,7 @@
     currentUser = user;
     document.getElementById('header-user').textContent = user.name;
     document.getElementById('welcome-name').textContent = user.name.split(' ')[0];
+    document.getElementById('btn-history').hidden = false;
     document.getElementById('btn-new-chat').hidden = false;
     document.getElementById('btn-logout').hidden = false;
     document.getElementById('login-screen').hidden = true;
@@ -779,6 +857,86 @@
 
   document.getElementById('btn-new-chat').addEventListener('click', clearSession);
   document.getElementById('btn-logout').addEventListener('click', doLogout);
+
+  // ── HISTÓRICO ────────────────────────────────────────────────────────────────
+  const historyOverlay = document.getElementById('history-overlay');
+  const historyPanel   = document.getElementById('history-panel');
+  const historyList    = document.getElementById('history-list');
+
+  function openHistory() {
+    historyOverlay.classList.add('open');
+    historyPanel.classList.add('open');
+    loadHistory();
+  }
+
+  function closeHistory() {
+    historyOverlay.classList.remove('open');
+    historyPanel.classList.remove('open');
+  }
+
+  async function loadHistory() {
+    historyList.innerHTML = '<div id="history-loading">Carregando...</div>';
+    try {
+      const data = await apiCall('users', { action: 'history', user_id: currentUser.id });
+      historyList.innerHTML = '';
+      if (!data.sessions || data.sessions.length === 0) {
+        historyList.innerHTML = '<div class="history-empty">Nenhuma conversa encontrada.</div>';
+        return;
+      }
+      data.sessions.forEach(session => {
+        const firstUserMsg = session.messages.find(m => m.role === 'user');
+        const preview = firstUserMsg ? firstUserMsg.content : '(sem mensagens)';
+        const date = new Date(session.started_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const msgCount = session.messages.length;
+
+        const el = document.createElement('div');
+        el.className = 'history-session';
+        el.innerHTML = `
+          <div class="history-session-date">${date}</div>
+          <div class="history-session-preview">${escapeHtml(preview)}</div>
+          <div class="history-session-count">${msgCount} mensagen${msgCount !== 1 ? 's' : ''}</div>`;
+        el.addEventListener('click', () => loadSessionMessages(session));
+        historyList.appendChild(el);
+      });
+    } catch(e) {
+      historyList.innerHTML = '<div class="history-empty">Erro ao carregar histórico.</div>';
+    }
+  }
+
+  function loadSessionMessages(session) {
+    closeHistory();
+    // Limpa área de mensagens e exibe a sessão selecionada
+    const msgs = document.getElementById('messages');
+    while (msgs.firstChild && msgs.firstChild !== typingIndicator) msgs.removeChild(msgs.firstChild);
+
+    const label = document.createElement('div');
+    label.className = 'welcome-msg';
+    const date = new Date(session.started_at).toLocaleDateString('pt-BR');
+    label.innerHTML = `Conversa de <strong>${date}</strong>`;
+    msgs.insertBefore(label, typingIndicator);
+
+    session.messages.forEach(m => {
+      const isUser = m.role === 'user';
+      const initials = isUser
+        ? currentUser.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+        : 'DT';
+      const row = document.createElement('div');
+      row.className = `msg-row ${isUser ? 'user' : 'bot'}`;
+      const msgDate = new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      row.innerHTML = `
+        <div class="msg-avatar">${initials}</div>
+        <div>
+          <div class="msg-bubble">${isUser ? escapeHtml(m.content) : renderMarkdown(m.content)}</div>
+          <div class="msg-meta">${msgDate}</div>
+        </div>`;
+      msgs.insertBefore(row, typingIndicator);
+    });
+    scrollToBottom();
+  }
+
+  document.getElementById('btn-history').addEventListener('click', openHistory);
+  historyOverlay.addEventListener('click', closeHistory);
+  document.getElementById('btn-close-history').addEventListener('click', closeHistory);
 
   btnLogin.addEventListener('click', doLogin);
   inputPwd.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
