@@ -145,6 +145,40 @@
     }
     #btn-logout:hover { background: rgba(255,255,255,.35); }
 
+    /* ── TELA DE TROCA DE SENHA ── */
+    #change-password-screen {
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+    .change-password-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      max-width: 380px;
+      width: 100%;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    }
+    .change-password-card .login-logo { background: var(--magenta); }
+    .change-password-card h2 { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+    .change-password-card p  { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; }
+    #btn-change-password {
+      width: 100%; padding: 12px;
+      background: var(--magenta); color: #fff;
+      border: none; border-radius: 10px;
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      cursor: pointer; margin-top: 4px; transition: background .2s;
+    }
+    #btn-change-password:hover    { background: var(--magenta-dark); }
+    #btn-change-password:disabled { background: #BDBDBD; cursor: default; }
+    #change-password-error {
+      font-size: 13px; color: #D32F2F;
+      background: #FFF3F3; border: 1px solid #FFCDD2;
+      border-radius: 8px; padding: 10px 12px;
+      margin-top: 14px; display: none;
+    }
+    #change-password-error.visible { display: block; }
+
     /* ── TELA DE CHAT ── */
     #chat-screen { background: var(--bg); }
 
@@ -458,6 +492,29 @@
   </div>
 </div>
 
+<!-- ── TELA: TROCA DE SENHA ──────────────────────────────────── -->
+<div id="change-password-screen" class="screen" hidden>
+  <div class="change-password-card">
+    <div class="login-logo">DT</div>
+    <h2>Crie sua senha</h2>
+    <p>Este é seu primeiro acesso. Defina uma senha pessoal para continuar.</p>
+    <div class="form-group">
+      <label for="cp-current">Senha temporária</label>
+      <input type="password" id="cp-current" placeholder="••••••••">
+    </div>
+    <div class="form-group">
+      <label for="cp-new">Nova senha</label>
+      <input type="password" id="cp-new" placeholder="••••••••">
+    </div>
+    <div class="form-group">
+      <label for="cp-confirm">Confirmar nova senha</label>
+      <input type="password" id="cp-confirm" placeholder="••••••••">
+    </div>
+    <button id="btn-change-password">Salvar senha</button>
+    <div id="change-password-error"></div>
+  </div>
+</div>
+
 <!-- ── TELA: CHAT ────────────────────────────────────────────── -->
 <div id="chat-screen" class="screen" hidden>
   <div id="messages">
@@ -511,7 +568,7 @@
 <script>
   // ── CONFIG ──────────────────────────────────────────────────────────────────
   const API_BASE = 'https://dtgbsn8n.eastus.cloudapp.azure.com/webhook';
-  const API_KEY  = 'dt-sales-a7f3c9e2b1d48520';
+  const API_KEY  = 'dt-sales-key-2024';
 
   let currentUser = null; // { id, name, email }
 
@@ -577,9 +634,13 @@
     try {
       const data = await apiCall('users', { action: 'login', email, password });
       if (data.success && data.user) {
-        localStorage.setItem('dt_current_user', JSON.stringify(data.user));
         inputPwd.value = '';
-        startChat(data.user);
+        if (data.user.must_change_password) {
+          showChangePassword(data.user);
+        } else {
+          localStorage.setItem('dt_current_user', JSON.stringify(data.user));
+          startChat(data.user);
+        }
       } else {
         showLoginError(data.error || 'Email ou senha incorretos.');
       }
@@ -591,11 +652,65 @@
     }
   }
 
+  // ── TROCA DE SENHA ───────────────────────────────────────────────────────────
+  let pendingUser = null; // usuário aguardando troca de senha
+
+  function showChangePassword(user) {
+    pendingUser = user;
+    document.getElementById('login-screen').hidden = true;
+    document.getElementById('change-password-screen').hidden = false;
+    document.getElementById('cp-current').value = '';
+    document.getElementById('cp-new').value = '';
+    document.getElementById('cp-confirm').value = '';
+    document.getElementById('cp-current').focus();
+  }
+
+  async function doChangePassword() {
+    const current = document.getElementById('cp-current').value;
+    const newPwd   = document.getElementById('cp-new').value;
+    const confirm  = document.getElementById('cp-confirm').value;
+    const errEl    = document.getElementById('change-password-error');
+
+    errEl.classList.remove('visible');
+
+    if (!current || !newPwd || !confirm) { errEl.textContent = 'Preencha todos os campos.'; errEl.classList.add('visible'); return; }
+    if (newPwd.length < 6) { errEl.textContent = 'A nova senha deve ter pelo menos 6 caracteres.'; errEl.classList.add('visible'); return; }
+    if (newPwd !== confirm) { errEl.textContent = 'As senhas não coincidem.'; errEl.classList.add('visible'); return; }
+    if (newPwd === current) { errEl.textContent = 'A nova senha deve ser diferente da senha temporária.'; errEl.classList.add('visible'); return; }
+
+    const btn = document.getElementById('btn-change-password');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+
+    try {
+      const data = await apiCall('users', { action: 'change_password', user_id: pendingUser.id, new_password: newPwd });
+      if (data.success) {
+        document.getElementById('change-password-screen').hidden = true;
+        localStorage.setItem('dt_current_user', JSON.stringify(pendingUser));
+        startChat(pendingUser);
+        pendingUser = null;
+      } else {
+        errEl.textContent = data.error || 'Erro ao alterar senha.';
+        errEl.classList.add('visible');
+      }
+    } catch(e) {
+      errEl.textContent = 'Erro de conexão. Tente novamente.';
+      errEl.classList.add('visible');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Salvar senha';
+    }
+  }
+
+  document.getElementById('btn-change-password').addEventListener('click', doChangePassword);
+  ['cp-current','cp-new','cp-confirm'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') doChangePassword(); });
+  });
+
   function doLogout() {
     localStorage.removeItem('dt_current_user');
     currentUser = null;
     document.getElementById('chat-screen').hidden = true;
     document.getElementById('login-screen').hidden = false;
+    document.getElementById('change-password-screen').hidden = true;
     document.getElementById('btn-history').hidden = true;
     document.getElementById('btn-new-chat').hidden = true;
     document.getElementById('btn-logout').hidden = true;
