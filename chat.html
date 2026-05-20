@@ -567,17 +567,21 @@
 
 <script>
   // ── CONFIG ──────────────────────────────────────────────────────────────────
-  const API_BASE = 'https://dtgbsn8n.eastus.cloudapp.azure.com/webhook';
-  const API_KEY  = 'dt-sales-key-2024';
+  const API_BASE  = 'https://dtgbsn8n.eastus.cloudapp.azure.com/webhook';
+  const API_KEY   = 'dt-sales-key-2024';
+  const NAMESPACE = 'dt-sales';
+  const LOGO      = 'DT';
 
   let currentUser = null; // { id, name, email }
 
   // ── API ─────────────────────────────────────────────────────────────────────
   async function apiCall(endpoint, body) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (typeof API_KEY !== 'undefined') headers['X-API-Key'] = API_KEY;
     const res = await fetch(`${API_BASE}/${endpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
-      body: JSON.stringify(body)
+      headers,
+      body: JSON.stringify({ ...body, namespace: NAMESPACE })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
@@ -751,7 +755,7 @@
     const isUser = role === 'user';
     const initials = isUser
       ? currentUser.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-      : 'DT';
+      : LOGO;
 
     const row = document.createElement('div');
     row.className = `msg-row ${isUser ? 'user' : 'bot'}`;
@@ -1034,7 +1038,7 @@
       const isUser = m.role === 'user';
       const initials = isUser
         ? currentUser.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-        : 'DT';
+        : LOGO;
       const row = document.createElement('div');
       row.className = `msg-row ${isUser ? 'user' : 'bot'}`;
       const msgDate = new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
