@@ -639,6 +639,7 @@
       const data = await apiCall('users', { action: 'login', email, password });
       if (data.success && data.user) {
         inputPwd.value = '';
+        if (!data.user.email) data.user.email = email; // garante que o email sempre fica no currentUser
         if (data.user.must_change_password) {
           showChangePassword(data.user);
         } else {
@@ -858,7 +859,7 @@
 
     try {
       const sid  = getSessionId(currentUser.id);
-      const data = await apiCall('chat', { query, session_id: sid, user_id: currentUser.id });
+      const data = await apiCall('chat', { query, session_id: sid, user_id: currentUser.id, user_email: currentUser.email });
       setTyping(false);
       addMessage('bot', data.answer || '(sem resposta)', data.sources);
     } catch(e) {
@@ -1064,7 +1065,11 @@
   // ── INIT — verifica sessão salva ─────────────────────────────────────────────
   const saved = localStorage.getItem('dt_current_user');
   if (saved) {
-    try { startChat(JSON.parse(saved)); }
+    try {
+      const u = JSON.parse(saved);
+      if (!u.email) { localStorage.removeItem('dt_current_user'); } // sessão antiga sem email → força relogin
+      else { startChat(u); }
+    }
     catch(e) { localStorage.removeItem('dt_current_user'); }
   }
 </script>
