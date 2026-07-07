@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agro Assistant</title>
+  <title>Corporativo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs" type="module" id="pdfjs-script"></script>
@@ -460,8 +460,8 @@
 <!-- ── HEADER ───────────────────────────────────────────────── -->
 <header>
   <div class="header-brand">
-    <div class="header-logo">AG</div>
-    <span class="header-title">Agro Assistant</span>
+    <div class="header-logo">CO</div>
+    <span class="header-title">Corporativo</span>
   </div>
   <div class="header-right">
     <span id="header-user"></span>
@@ -474,9 +474,9 @@
 <!-- ── TELA: LOGIN ───────────────────────────────────────────── -->
 <div id="login-screen" class="screen">
   <div class="login-card">
-    <div class="login-logo">AG</div>
+    <div class="login-logo">CO</div>
     <h2>Entrar</h2>
-    <p>Acesse o Agro Assistant</p>
+    <p>Acesse o Corporativo</p>
     <div class="form-group">
       <label for="input-email">Email</label>
       <input type="email" id="input-email" placeholder="seu@email.com" autocomplete="email">
@@ -495,7 +495,7 @@
 <!-- ── TELA: TROCA DE SENHA ──────────────────────────────────── -->
 <div id="change-password-screen" class="screen" hidden>
   <div class="change-password-card">
-    <div class="login-logo">AG</div>
+    <div class="login-logo">CO</div>
     <h2>Crie sua senha</h2>
     <p>Este é seu primeiro acesso. Defina uma senha pessoal para continuar.</p>
     <div class="form-group">
@@ -524,7 +524,7 @@
 
     <!-- Typing indicator -->
     <div id="typing-indicator">
-      <div class="typing-avatar">AG</div>
+      <div class="typing-avatar">CO</div>
       <div class="typing-dots">
         <span></span><span></span><span></span>
       </div>
@@ -568,9 +568,9 @@
 <script>
   // ── CONFIG ──────────────────────────────────────────────────────────────────
   const API_BASE  = 'https://dtgbsn8n.eastus.cloudapp.azure.com/webhook';
-  const API_KEY   = 'agro-key-2024';
-  const NAMESPACE = 'agro';
-  const LOGO      = 'AG';
+  const API_KEY   = 'corporativo-key-2024';
+  const NAMESPACE = 'corporativo';
+  const LOGO      = 'CO';
 
   let currentUser = null; // { id, name, email }
 
