@@ -1241,6 +1241,10 @@
             <span class="crm-menu-icon">🔽</span>
             <span class="crm-menu-label">Ver meu funil completo</span>
           </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:ALERT_NO_OPP__','Pre Sales sem Nº Oportunidade')">
+            <span class="crm-menu-icon">⚠️</span>
+            <span class="crm-menu-label">Pre Sales sem Nº Oportunidade</span>
+          </button>
           <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:CREATE_LEAD__','Criar novo lead')">
             <span class="crm-menu-icon">➕</span>
             <span class="crm-menu-label">Criar novo lead</span>
@@ -1306,6 +1310,10 @@
           <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:FUNNEL__','Funil de ${s.name}',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
             <span class="crm-menu-icon">🔽</span>
             <span class="crm-menu-label">Funil completo</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:ALERT_NO_OPP__','Pre Sales sem Nº Oportunidade — ${s.name}',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">⚠️</span>
+            <span class="crm-menu-label">Pre Sales sem Nº Oportunidade</span>
           </button>
         </div>`;
     }
