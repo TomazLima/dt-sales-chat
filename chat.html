@@ -1207,17 +1207,35 @@
           <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
         </div>
         <div class="crm-menu-items">
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_7D__','Meus leads — últimos 7 dias')">
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_7D__','Minhas atualizações — últimos 7 dias')">
             <span class="crm-menu-icon">📋</span>
-            <span class="crm-menu-label">Meus leads — últimos 7 dias</span>
+            <span class="crm-menu-label">Minhas atualizações — últimos 7 dias</span>
           </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_15D__','Meus leads — últimos 15 dias')">
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_15D__','Minhas atualizações — últimos 15 dias')">
             <span class="crm-menu-icon">📋</span>
-            <span class="crm-menu-label">Meus leads — últimos 15 dias</span>
+            <span class="crm-menu-label">Minhas atualizações — últimos 15 dias</span>
           </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_30D__','Meus leads — último mês')">
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_30D__','Minhas atualizações — último mês')">
             <span class="crm-menu-icon">📋</span>
-            <span class="crm-menu-label">Meus leads — último mês</span>
+            <span class="crm-menu-label">Minhas atualizações — último mês</span>
+          </button>
+          <div class="crm-menu-divider"></div>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_7D__','Meus leads criados — últimos 7 dias')">
+            <span class="crm-menu-icon">🆕</span>
+            <span class="crm-menu-label">Meus leads criados — últimos 7 dias</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_15D__','Meus leads criados — últimos 15 dias')">
+            <span class="crm-menu-icon">🆕</span>
+            <span class="crm-menu-label">Meus leads criados — últimos 15 dias</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_30D__','Meus leads criados — último mês')">
+            <span class="crm-menu-icon">🆕</span>
+            <span class="crm-menu-label">Meus leads criados — último mês</span>
+          </button>
+          <div class="crm-menu-divider"></div>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:GROWTH_WW__','Crescimento semana a semana')">
+            <span class="crm-menu-icon">📈</span>
+            <span class="crm-menu-label">Crescimento semana a semana</span>
           </button>
           <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:FUNNEL__','Ver meu funil completo')">
             <span class="crm-menu-icon">🔽</span>
@@ -1255,17 +1273,35 @@
           <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
         </div>
         <div class="crm-menu-items">
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_7D__','Leads de ${s.name} — 7 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_7D__','Atualizações de ${s.name} — 7 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
             <span class="crm-menu-icon">📋</span>
-            <span class="crm-menu-label">Últimos 7 dias</span>
+            <span class="crm-menu-label">Atualizações — 7 dias</span>
           </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_15D__','Leads de ${s.name} — 15 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_15D__','Atualizações de ${s.name} — 15 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
             <span class="crm-menu-icon">📋</span>
-            <span class="crm-menu-label">Últimos 15 dias</span>
+            <span class="crm-menu-label">Atualizações — 15 dias</span>
           </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_30D__','Leads de ${s.name} — último mês',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_30D__','Atualizações de ${s.name} — mês',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
             <span class="crm-menu-icon">📋</span>
-            <span class="crm-menu-label">Último mês</span>
+            <span class="crm-menu-label">Atualizações — último mês</span>
+          </button>
+          <div class="crm-menu-divider"></div>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_7D__','Leads criados de ${s.name} — 7 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">🆕</span>
+            <span class="crm-menu-label">Criados — 7 dias</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_15D__','Leads criados de ${s.name} — 15 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">🆕</span>
+            <span class="crm-menu-label">Criados — 15 dias</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_30D__','Leads criados de ${s.name} — mês',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">🆕</span>
+            <span class="crm-menu-label">Criados — último mês</span>
+          </button>
+          <div class="crm-menu-divider"></div>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:GROWTH_WW__','Crescimento de ${s.name} — semana a semana',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">📈</span>
+            <span class="crm-menu-label">Crescimento semana a semana</span>
           </button>
           <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:FUNNEL__','Funil de ${s.name}',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
             <span class="crm-menu-icon">🔽</span>
