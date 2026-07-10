@@ -368,6 +368,78 @@
     #btn-send:disabled { background: #BDBDBD; cursor: default; transform: none; }
     #btn-send svg { width: 18px; height: 18px; fill: #fff; }
 
+    /* ── BOTÃO CRM ── */
+    #btn-crm {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: none;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; color: var(--text-muted);
+      transition: border-color .2s, color .2s;
+    }
+    #btn-crm:hover { border-color: var(--magenta); color: var(--magenta); }
+    #btn-crm svg { width: 16px; height: 16px; }
+
+    /* ── MENU CRM ── */
+    #crm-menu-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      z-index: 300;
+    }
+    #crm-menu-overlay.open { display: block; }
+
+    #crm-menu {
+      position: fixed;
+      bottom: 74px;
+      left: 50%; transform: translateX(-50%);
+      width: min(420px, calc(100vw - 32px));
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: 0 -4px 24px rgba(0,0,0,.16);
+      z-index: 301;
+      overflow: hidden;
+      display: none;
+    }
+    #crm-menu.open { display: block; }
+
+    .crm-menu-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .crm-menu-back {
+      background: none; border: none; cursor: pointer;
+      color: var(--magenta); font-size: 20px; font-weight: 600;
+      line-height: 1; padding: 0; display: none;
+    }
+    .crm-menu-back.visible { display: block; }
+    .crm-menu-title { font-size: 14px; font-weight: 600; flex: 1; }
+    .crm-menu-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 18px; line-height: 1; padding: 2px 4px;
+    }
+    .crm-menu-close:hover { color: var(--text); }
+
+    .crm-menu-items { padding: 6px 0; }
+
+    .crm-menu-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 16px;
+      cursor: pointer;
+      transition: background .15s;
+      font-size: 14px;
+      border: none; background: none;
+      width: 100%; text-align: left;
+      color: var(--text); font-family: inherit;
+    }
+    .crm-menu-item:hover { background: #FFF5FA; }
+    .crm-menu-icon  { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
+    .crm-menu-label { flex: 1; }
+    .crm-menu-arrow { color: var(--text-muted); font-size: 16px; }
+    .crm-menu-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
     /* ── PAINEL DE HISTÓRICO ── */
     #btn-history {
       background: rgba(255,255,255,.2);
@@ -545,6 +617,11 @@
         <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48"/>
       </svg>
     </button>
+    <button id="btn-crm" title="Menu CRM" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+    </button>
     <textarea id="msg-input" rows="1" placeholder="Digite sua mensagem..."></textarea>
     <button id="btn-send" title="Enviar">
       <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -561,6 +638,10 @@
   </div>
   <div id="history-list"></div>
 </div>
+
+<!-- CRM Menu -->
+<div id="crm-menu-overlay"></div>
+<div id="crm-menu"></div>
 
 <!-- Toast -->
 <div id="toast"></div>
@@ -719,6 +800,8 @@
     document.getElementById('btn-history').hidden = true;
     document.getElementById('btn-new-chat').hidden = true;
     document.getElementById('btn-logout').hidden = true;
+    document.getElementById('btn-crm').hidden = true;
+    closeCRMMenu();
     document.getElementById('header-user').textContent = '';
     inputEmail.value = '';
     inputPwd.value = '';
@@ -736,6 +819,7 @@
     document.getElementById('btn-history').hidden = false;
     document.getElementById('btn-new-chat').hidden = false;
     document.getElementById('btn-logout').hidden = false;
+    document.getElementById('btn-crm').hidden = false;
     document.getElementById('login-screen').hidden = true;
     document.getElementById('chat-screen').hidden = false;
     document.getElementById('msg-input').focus();
@@ -1061,6 +1145,211 @@
   btnLogin.addEventListener('click', doLogin);
   inputPwd.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   inputEmail.addEventListener('keydown', e => { if (e.key === 'Enter') inputPwd.focus(); });
+
+  // ── CRM MENU ─────────────────────────────────────────────────────────────────
+  const CRM_SELLERS = [
+    { name: 'Alexandre Merheje', id: '67116efbcbaaf0001ab2b4fd' },
+    { name: 'Andreia Rosa',      id: '67f0112a6dcfb600274b712c' },
+    { name: 'Arthur Lima',       id: '67850f13625ad00014323a2d' },
+    { name: 'Francisco Carlos',  id: '692f00868f078900141cebf3' },
+    { name: 'Gabriel Lima',      id: '6927498550e3850021882996' },
+    { name: 'Gabriel Vilar',     id: '671a9645d7360e001a705afe' },
+    { name: 'Henrique Dyrjawoj', id: '68764367cf4d880014faa125' },
+    { name: 'Jorge Seiti',       id: '671c3419ee87800012654945' },
+    { name: 'Nathan Gomes',      id: '697116eda3f25c0023ed36ae' },
+    { name: 'Renato Cavallari',  id: '67af9f90ee87d1001f36dee1' },
+    { name: 'Vagner Moraes',     id: '664653b57a2f52000fd0cee4' },
+  ];
+
+  const CRM_MANAGERS = ['pablo.guaita@telekom.com', 'tomaz.lima@telekom.com', 'andreia.rosa@telekom.com', 'limag@telekom.com'];
+
+  function isCRMManager() {
+    return currentUser && CRM_MANAGERS.includes((currentUser.email || '').toLowerCase());
+  }
+
+  let crmMenuState = 'main';
+  let crmSelectedSeller = null;
+
+  function openCRMMenu() {
+    crmMenuState = 'main';
+    crmSelectedSeller = null;
+    document.getElementById('crm-menu-overlay').classList.add('open');
+    document.getElementById('crm-menu').classList.add('open');
+    renderCRMMenu();
+  }
+
+  function closeCRMMenu() {
+    document.getElementById('crm-menu-overlay').classList.remove('open');
+    document.getElementById('crm-menu').classList.remove('open');
+  }
+
+  function crmSelectSeller(i) {
+    crmSelectedSeller = CRM_SELLERS[i];
+    crmMenuState = 'period';
+    renderCRMMenu();
+  }
+
+  function renderCRMMenu() {
+    const menu = document.getElementById('crm-menu');
+
+    if (crmMenuState === 'main') {
+      const managerRow = isCRMManager() ? `
+        <div class="crm-menu-divider"></div>
+        <button class="crm-menu-item" onclick="crmMenuState='sellers';renderCRMMenu()">
+          <span class="crm-menu-icon">👥</span>
+          <span class="crm-menu-label">Ver leads da equipe</span>
+          <span class="crm-menu-arrow">›</span>
+        </button>` : '';
+
+      menu.innerHTML = `
+        <div class="crm-menu-header">
+          <span class="crm-menu-title">📊 CRM — O que deseja fazer?</span>
+          <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
+        </div>
+        <div class="crm-menu-items">
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_7D__','Minhas atualizações — últimos 7 dias')">
+            <span class="crm-menu-icon">📋</span>
+            <span class="crm-menu-label">Minhas atualizações — últimos 7 dias</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_15D__','Minhas atualizações — últimos 15 dias')">
+            <span class="crm-menu-icon">📋</span>
+            <span class="crm-menu-label">Minhas atualizações — últimos 15 dias</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_30D__','Minhas atualizações — último mês')">
+            <span class="crm-menu-icon">📋</span>
+            <span class="crm-menu-label">Minhas atualizações — último mês</span>
+          </button>
+          <div class="crm-menu-divider"></div>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_7D__','Meus leads criados — últimos 7 dias')">
+            <span class="crm-menu-icon">🆕</span>
+            <span class="crm-menu-label">Meus leads criados — últimos 7 dias</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_15D__','Meus leads criados — últimos 15 dias')">
+            <span class="crm-menu-icon">🆕</span>
+            <span class="crm-menu-label">Meus leads criados — últimos 15 dias</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_30D__','Meus leads criados — último mês')">
+            <span class="crm-menu-icon">🆕</span>
+            <span class="crm-menu-label">Meus leads criados — último mês</span>
+          </button>
+          <div class="crm-menu-divider"></div>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:GROWTH_WW__','Crescimento semana a semana')">
+            <span class="crm-menu-icon">📈</span>
+            <span class="crm-menu-label">Crescimento semana a semana</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:FUNNEL__','Ver meu funil completo')">
+            <span class="crm-menu-icon">🔽</span>
+            <span class="crm-menu-label">Ver meu funil completo</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:ALERT_NO_OPP__','Pre Sales sem Nº Oportunidade')">
+            <span class="crm-menu-icon">⚠️</span>
+            <span class="crm-menu-label">Pre Sales sem Nº Oportunidade</span>
+          </button>
+          <div class="crm-menu-divider"></div>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:TASKS_TODAY__','Minhas tarefas de hoje')">
+            <span class="crm-menu-icon">✅</span>
+            <span class="crm-menu-label">Minhas tarefas — hoje</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:TASKS_WEEK__','Minhas tarefas desta semana')">
+            <span class="crm-menu-icon">🗓️</span>
+            <span class="crm-menu-label">Minhas tarefas — esta semana</span>
+          </button>
+          <div class="crm-menu-divider"></div>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:CREATE_LEAD__','Criar novo lead')">
+            <span class="crm-menu-icon">➕</span>
+            <span class="crm-menu-label">Criar novo lead</span>
+          </button>
+          ${managerRow}
+        </div>`;
+
+    } else if (crmMenuState === 'sellers') {
+      const items = CRM_SELLERS.map((s, i) => `
+        <button class="crm-menu-item" onclick="crmSelectSeller(${i})">
+          <span class="crm-menu-icon">👤</span>
+          <span class="crm-menu-label">${s.name}</span>
+          <span class="crm-menu-arrow">›</span>
+        </button>`).join('');
+
+      menu.innerHTML = `
+        <div class="crm-menu-header">
+          <button class="crm-menu-back visible" onclick="crmMenuState='main';renderCRMMenu()">‹</button>
+          <span class="crm-menu-title">Selecione o vendedor</span>
+          <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
+        </div>
+        <div class="crm-menu-items">${items}</div>`;
+
+    } else if (crmMenuState === 'period') {
+      const s = crmSelectedSeller;
+      menu.innerHTML = `
+        <div class="crm-menu-header">
+          <button class="crm-menu-back visible" onclick="crmMenuState='sellers';renderCRMMenu()">‹</button>
+          <span class="crm-menu-title">${s.name}</span>
+          <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
+        </div>
+        <div class="crm-menu-items">
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_7D__','Atualizações de ${s.name} — 7 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">📋</span>
+            <span class="crm-menu-label">Atualizações — 7 dias</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_15D__','Atualizações de ${s.name} — 15 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">📋</span>
+            <span class="crm-menu-label">Atualizações — 15 dias</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_30D__','Atualizações de ${s.name} — mês',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">📋</span>
+            <span class="crm-menu-label">Atualizações — último mês</span>
+          </button>
+          <div class="crm-menu-divider"></div>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_7D__','Leads criados de ${s.name} — 7 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">🆕</span>
+            <span class="crm-menu-label">Criados — 7 dias</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_15D__','Leads criados de ${s.name} — 15 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">🆕</span>
+            <span class="crm-menu-label">Criados — 15 dias</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_30D__','Leads criados de ${s.name} — mês',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">🆕</span>
+            <span class="crm-menu-label">Criados — último mês</span>
+          </button>
+          <div class="crm-menu-divider"></div>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:GROWTH_WW__','Crescimento de ${s.name} — semana a semana',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">📈</span>
+            <span class="crm-menu-label">Crescimento semana a semana</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:FUNNEL__','Funil de ${s.name}',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">🔽</span>
+            <span class="crm-menu-label">Funil completo</span>
+          </button>
+          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:ALERT_NO_OPP__','Pre Sales sem Nº Oportunidade — ${s.name}',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
+            <span class="crm-menu-icon">⚠️</span>
+            <span class="crm-menu-label">Pre Sales sem Nº Oportunidade</span>
+          </button>
+        </div>`;
+    }
+  }
+
+  async function sendCRMCommand(cmd, label, extras) {
+    closeCRMMenu();
+    addMessage('user', label);
+    setTyping(true);
+    try {
+      const sid  = getSessionId(currentUser.id);
+      const data = await apiCall('chat', {
+        query: cmd, session_id: sid,
+        user_id: currentUser.id, user_email: currentUser.email,
+        ...(extras || {})
+      });
+      setTyping(false);
+      addMessage('bot', data.answer || '(sem resposta)', data.sources);
+    } catch(e) {
+      setTyping(false);
+      showToast('Erro ao consultar CRM. Tente novamente.');
+    }
+  }
+
+  document.getElementById('btn-crm').addEventListener('click', openCRMMenu);
+  document.getElementById('crm-menu-overlay').addEventListener('click', closeCRMMenu);
 
   // ── INIT — verifica sessão salva ─────────────────────────────────────────────
   const saved = localStorage.getItem('dt_current_user');
