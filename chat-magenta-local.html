@@ -381,6 +381,7 @@
     }
     #btn-crm:hover { border-color: var(--magenta); color: var(--magenta); }
     #btn-crm svg { width: 16px; height: 16px; }
+    #btn-crm[hidden] { display: none; }
 
     /* ── MENU CRM ── */
     #crm-menu-overlay {
@@ -439,6 +440,37 @@
     .crm-menu-label { flex: 1; }
     .crm-menu-arrow { color: var(--text-muted); font-size: 16px; }
     .crm-menu-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+    /* ── BOTÃO REUNIÕES / LISTA DE REUNIÕES ── */
+    #btn-meetings {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: none;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; color: var(--text-muted);
+      font-size: 16px;
+      transition: border-color .2s, color .2s;
+    }
+    #btn-meetings:hover { border-color: var(--magenta); color: var(--magenta); }
+    #btn-meetings[hidden] { display: none; }
+
+    .meetings-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; max-width: 340px; }
+    .meeting-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text);
+      text-align: left;
+      transition: border-color .15s, background .15s;
+    }
+    .meeting-item:hover { border-color: var(--magenta); background: #FFF5FA; }
 
     /* ── PAINEL DE HISTÓRICO ── */
     #btn-history {
@@ -622,6 +654,7 @@
         <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
       </svg>
     </button>
+    <button id="btn-meetings" title="Reuniões" hidden>📅</button>
     <textarea id="msg-input" rows="1" placeholder="Digite sua mensagem..."></textarea>
     <button id="btn-send" title="Enviar">
       <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -652,6 +685,8 @@
   const API_KEY   = 'magenta-local-key-2024';
   const NAMESPACE = 'magenta-local';
   const LOGO      = 'ML';
+  const CRM_ENABLED      = true;
+  const MEETINGS_ENABLED = true;
 
   let currentUser = null; // { id, name, email }
 
@@ -801,6 +836,7 @@
     document.getElementById('btn-new-chat').hidden = true;
     document.getElementById('btn-logout').hidden = true;
     document.getElementById('btn-crm').hidden = true;
+    document.getElementById('btn-meetings').hidden = true;
     closeCRMMenu();
     document.getElementById('header-user').textContent = '';
     inputEmail.value = '';
@@ -819,7 +855,8 @@
     document.getElementById('btn-history').hidden = false;
     document.getElementById('btn-new-chat').hidden = false;
     document.getElementById('btn-logout').hidden = false;
-    document.getElementById('btn-crm').hidden = false;
+    document.getElementById('btn-crm').hidden = !CRM_ENABLED;
+    document.getElementById('btn-meetings').hidden = !MEETINGS_ENABLED;
     document.getElementById('login-screen').hidden = true;
     document.getElementById('chat-screen').hidden = false;
     document.getElementById('msg-input').focus();
@@ -836,7 +873,7 @@
     return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 
-  function addMessage(role, text, sources) {
+  function addMessage(role, text, sources, meetings) {
     const isUser = role === 'user';
     const initials = isUser
       ? currentUser.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
@@ -858,6 +895,24 @@
         ${sourcesHtml}
         <div class="msg-meta">${timeStr()}</div>
       </div>`;
+
+    // Botões de reunião — via DOM (textContent), nunca interpolando título em onclick.
+    if (Array.isArray(meetings) && meetings.length > 0) {
+      const wrapper = row.lastElementChild;
+      const list = document.createElement('div');
+      list.className = 'meetings-list';
+      meetings.forEach(m => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'meeting-item';
+        const titulo = m.titulo || 'Sem título';
+        const dataStr = m.data ? (' — ' + m.data) : '';
+        btn.textContent = '📄 ' + titulo + dataStr;
+        btn.addEventListener('click', () => sendCRMCommand('__MEETINGS:SUMMARY:' + m.id + '__', 'ATA: ' + titulo));
+        list.appendChild(btn);
+      });
+      wrapper.insertBefore(list, wrapper.querySelector('.msg-meta'));
+    }
 
     messagesEl.insertBefore(row, typingIndicator);
     scrollToBottom();
@@ -945,7 +1000,7 @@
       const sid  = getSessionId(currentUser.id);
       const data = await apiCall('chat', { query, session_id: sid, user_id: currentUser.id, user_email: currentUser.email });
       setTyping(false);
-      addMessage('bot', data.answer || '(sem resposta)', data.sources);
+      addMessage('bot', data.answer || '(sem resposta)', data.sources, data.meetings);
     } catch(e) {
       setTyping(false);
       showToast('Erro ao enviar mensagem. Tente novamente.');
@@ -1341,7 +1396,7 @@
         ...(extras || {})
       });
       setTyping(false);
-      addMessage('bot', data.answer || '(sem resposta)', data.sources);
+      addMessage('bot', data.answer || '(sem resposta)', data.sources, data.meetings);
     } catch(e) {
       setTyping(false);
       showToast('Erro ao consultar CRM. Tente novamente.');
@@ -1350,6 +1405,9 @@
 
   document.getElementById('btn-crm').addEventListener('click', openCRMMenu);
   document.getElementById('crm-menu-overlay').addEventListener('click', closeCRMMenu);
+  document.getElementById('btn-meetings').addEventListener('click', () => {
+    sendCRMCommand('__MEETINGS:LIST__', '📅 Ver reuniões disponíveis');
+  });
 
   // ── INIT — verifica sessão salva ─────────────────────────────────────────────
   const saved = localStorage.getItem('dt_current_user');
