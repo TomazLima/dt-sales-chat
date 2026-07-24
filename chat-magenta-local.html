@@ -1216,7 +1216,7 @@
     { name: 'Vagner Moraes',     id: '664653b57a2f52000fd0cee4' },
   ];
 
-  const CRM_MANAGERS = ['pablo.guaita@telekom.com', 'tomaz.lima@telekom.com', 'andreia.rosa@telekom.com', 'limag@telekom.com'];
+  const CRM_MANAGERS = ['pablo.guaita@telekom.com', 'tomaz.lima@telekom.com', 'andreia.rosa@telekom.com', 'limag@telekom.com', 'michele.nagamine@telekom.com', 'teste@dt.com', 'anderson.souza@external.telekom.com', 'daniel.sartori@telekom.com', 'bezerra.silva@telekom.com'];
 
   function isCRMManager() {
     return currentUser && CRM_MANAGERS.includes((currentUser.email || '').toLowerCase());
@@ -1410,15 +1410,31 @@
   });
 
   // ── INIT — verifica sessão salva ─────────────────────────────────────────────
-  const saved = localStorage.getItem('dt_current_user');
-  if (saved) {
+  (async () => {
+    const saved = localStorage.getItem('dt_current_user');
+    if (!saved) return;
+    let u;
+    try { u = JSON.parse(saved); }
+    catch(e) { localStorage.removeItem('dt_current_user'); return; }
+    if (!u.email) { localStorage.removeItem('dt_current_user'); return; } // sessão antiga sem email → força relogin
+
+    // Revalida com o backend antes de pular a tela de login: o cache local pode
+    // estar defasado (ex.: admin resetou a senha depois desse login ficar salvo).
     try {
-      const u = JSON.parse(saved);
-      if (!u.email) { localStorage.removeItem('dt_current_user'); } // sessão antiga sem email → força relogin
-      else { startChat(u); }
+      const status = await apiCall('users', { action: 'check_session', user_id: u.id });
+      if (status.success === false || status.active === false) {
+        localStorage.removeItem('dt_current_user');
+        return;
+      }
+      if (status.must_change_password) { showChangePassword(u); return; }
+      u.must_change_password = false;
+      localStorage.setItem('dt_current_user', JSON.stringify(u));
+      startChat(u);
+    } catch(e) {
+      // Falha de rede: não bloqueia o usuário, segue com o cache local.
+      startChat(u);
     }
-    catch(e) { localStorage.removeItem('dt_current_user'); }
-  }
+  })();
 </script>
 </body>
 </html>
