@@ -472,6 +472,37 @@
     }
     .meeting-item:hover { border-color: var(--magenta); background: #FFF5FA; }
 
+    /* ── BOTÃO FERRAMENTAS DE IA ── */
+    #btn-tools {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: none;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; color: var(--text-muted);
+      font-size: 16px;
+      transition: border-color .2s, color .2s;
+    }
+    #btn-tools:hover { border-color: var(--magenta); color: var(--magenta); }
+    #btn-tools[hidden] { display: none; }
+
+    .tools-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; max-width: 340px; }
+    .tool-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text);
+      text-align: left;
+      transition: border-color .15s, background .15s;
+    }
+    .tool-item:hover { border-color: var(--magenta); background: #FFF5FA; }
+
     /* ── PAINEL DE HISTÓRICO ── */
     #btn-history {
       background: rgba(255,255,255,.2);
@@ -655,6 +686,7 @@
       </svg>
     </button>
     <button id="btn-meetings" title="Reuniões" hidden>📅</button>
+    <button id="btn-tools" title="Ferramentas de IA" hidden>🛠️</button>
     <textarea id="msg-input" rows="1" placeholder="Digite sua mensagem..."></textarea>
     <button id="btn-send" title="Enviar">
       <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -687,6 +719,7 @@
   const LOGO      = 'CO';
   const CRM_ENABLED      = false;
   const MEETINGS_ENABLED = true;
+  const TOOLS_ENABLED    = true;
 
   let currentUser = null; // { id, name, email }
 
@@ -837,6 +870,7 @@
     document.getElementById('btn-logout').hidden = true;
     document.getElementById('btn-crm').hidden = true;
     document.getElementById('btn-meetings').hidden = true;
+    document.getElementById('btn-tools').hidden = true;
     closeCRMMenu();
     document.getElementById('header-user').textContent = '';
     inputEmail.value = '';
@@ -857,6 +891,7 @@
     document.getElementById('btn-logout').hidden = false;
     document.getElementById('btn-crm').hidden = !CRM_ENABLED;
     document.getElementById('btn-meetings').hidden = !MEETINGS_ENABLED;
+    document.getElementById('btn-tools').hidden = !TOOLS_ENABLED;
     document.getElementById('login-screen').hidden = true;
     document.getElementById('chat-screen').hidden = false;
     document.getElementById('msg-input').focus();
@@ -873,7 +908,7 @@
     return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 
-  function addMessage(role, text, sources, meetings) {
+  function addMessage(role, text, sources, meetings, tools) {
     const isUser = role === 'user';
     const initials = isUser
       ? currentUser.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
@@ -909,6 +944,23 @@
         const dataStr = m.data ? (' — ' + m.data) : '';
         btn.textContent = '📄 ' + titulo + dataStr;
         btn.addEventListener('click', () => sendCRMCommand('__MEETINGS:SUMMARY:' + m.id + '__', 'ATA: ' + titulo));
+        list.appendChild(btn);
+      });
+      wrapper.insertBefore(list, wrapper.querySelector('.msg-meta'));
+    }
+
+    // Botões de ferramenta — mesmo padrão dos de reunião (DOM/textContent, sem onclick inline).
+    if (Array.isArray(tools) && tools.length > 0) {
+      const wrapper = row.lastElementChild;
+      const list = document.createElement('div');
+      list.className = 'tools-list';
+      tools.forEach(t => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tool-item';
+        const name = t.name || 'Ferramenta';
+        btn.textContent = '🛠️ ' + name;
+        btn.addEventListener('click', () => sendCRMCommand('__TOOLS:DETAIL:' + t.id + '__', 'Detalhe: ' + name));
         list.appendChild(btn);
       });
       wrapper.insertBefore(list, wrapper.querySelector('.msg-meta'));
@@ -1000,7 +1052,7 @@
       const sid  = getSessionId(currentUser.id);
       const data = await apiCall('chat', { query, session_id: sid, user_id: currentUser.id, user_email: currentUser.email });
       setTyping(false);
-      addMessage('bot', data.answer || '(sem resposta)', data.sources, data.meetings);
+      addMessage('bot', data.answer || '(sem resposta)', data.sources, data.meetings, data.tools);
     } catch(e) {
       setTyping(false);
       showToast('Erro ao enviar mensagem. Tente novamente.');
@@ -1397,7 +1449,7 @@
         ...(extras || {})
       });
       setTyping(false);
-      addMessage('bot', data.answer || '(sem resposta)', data.sources, data.meetings);
+      addMessage('bot', data.answer || '(sem resposta)', data.sources, data.meetings, data.tools);
     } catch(e) {
       setTyping(false);
       showToast('Erro ao consultar CRM. Tente novamente.');
@@ -1408,6 +1460,9 @@
   document.getElementById('crm-menu-overlay').addEventListener('click', closeCRMMenu);
   document.getElementById('btn-meetings').addEventListener('click', () => {
     sendCRMCommand('__MEETINGS:LIST__', '📅 Ver reuniões disponíveis');
+  });
+  document.getElementById('btn-tools').addEventListener('click', () => {
+    sendCRMCommand('__TOOLS:LIST__', '🛠️ Ver ferramentas de IA aprovadas');
   });
 
   // ── INIT — verifica sessão salva ─────────────────────────────────────────────
