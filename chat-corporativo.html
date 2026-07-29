@@ -218,17 +218,35 @@
       line-height: 1.55;
     }
     .bot  .msg-bubble { background: var(--bot-bg); color: var(--text); border-bottom-left-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-    .bot .msg-bubble p { margin: 0 0 8px; }
+    .bot .msg-bubble p { margin: 0 0 10px; }
     .bot .msg-bubble p:last-child { margin-bottom: 0; }
-    .bot .msg-bubble ul, .bot .msg-bubble ol { margin: 4px 0 8px 18px; }
-    .bot .msg-bubble li { margin-bottom: 3px; }
-    .bot .msg-bubble strong { font-weight: 600; }
-    .bot .msg-bubble h1, .bot .msg-bubble h2, .bot .msg-bubble h3 { font-size: 14px; font-weight: 600; margin: 8px 0 4px; }
-    .bot .msg-bubble table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 13px; }
-    .bot .msg-bubble th { background: var(--magenta); color: #fff; font-weight: 600; padding: 7px 10px; text-align: left; }
-    .bot .msg-bubble td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
-    .bot .msg-bubble tr:last-child td { border-bottom: none; }
-    .bot .msg-bubble tr:nth-child(even) td { background: #F9F9F9; }
+    .bot .msg-bubble ul, .bot .msg-bubble ol { margin: 2px 0 12px; padding-left: 4px; list-style: none; }
+    .bot .msg-bubble li { margin-bottom: 6px; padding-left: 16px; position: relative; }
+    .bot .msg-bubble li:last-child { margin-bottom: 0; }
+    .bot .msg-bubble li::before { content: '\2022'; color: var(--magenta); font-weight: 700; position: absolute; left: 0; }
+    .bot .msg-bubble strong { font-weight: 700; color: inherit; }
+    .bot .msg-bubble h1, .bot .msg-bubble h2, .bot .msg-bubble h3 { font-weight: 700; margin: 14px 0 6px; color: var(--text); }
+    .bot .msg-bubble h1:first-child, .bot .msg-bubble h2:first-child, .bot .msg-bubble h3:first-child, .bot .msg-bubble .msg-section-title:first-child { margin-top: 0; }
+    .bot .msg-bubble h1 { font-size: 17px; }
+    .bot .msg-bubble h2 { font-size: 15px; }
+    .bot .msg-bubble h3 { font-size: 14px; }
+    .bot .msg-bubble .msg-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--magenta);
+      margin: 16px 0 8px;
+      padding-bottom: 5px;
+      border-bottom: 1.5px solid var(--border);
+    }
+    .bot .msg-bubble table { table-layout: fixed; border-collapse: separate; border-spacing: 0; width: 100%; margin: 10px 0; font-size: 12px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .bot .msg-bubble th { background: var(--magenta); color: #fff; font-weight: 600; padding: 7px 8px; text-align: left; overflow-wrap: break-word; }
+    .bot .msg-bubble td { padding: 7px 8px; border-top: 1px solid var(--border); overflow-wrap: break-word; }
+    .bot .msg-bubble th:first-child, .bot .msg-bubble td:first-child { width: 27%; }
+    .bot .msg-bubble th:last-child, .bot .msg-bubble td:last-child { width: 22%; overflow-wrap: anywhere; }
+    .bot .msg-bubble tr:first-child td { border-top: none; }
+    .bot .msg-bubble tr:nth-child(even) td { background: #FAFAFA; }
     .user .msg-bubble { background: var(--user-bg); color: var(--user-text); border-bottom-right-radius: 4px; }
 
     .msg-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
@@ -1001,6 +1019,11 @@
         rows.forEach(r => { tbl += '<tr>' + r.map(c => '<td>' + inlineFormat(c) + '</td>').join('') + '</tr>'; });
         tbl += '</tbody></table>';
         out.push(tbl);
+      } else if (/^\s*\*\*(.+?)\*\*\s*$/.test(lines[i])) {
+        // Linha inteira em **negrito** vira título de seção com destaque (em vez de negrito solto no meio do texto).
+        const title = lines[i].match(/^\s*\*\*(.+?)\*\*\s*$/)[1];
+        out.push('<div class="msg-section-title">' + title + '</div>');
+        i++;
       } else {
         out.push(lines[i]);
         i++;

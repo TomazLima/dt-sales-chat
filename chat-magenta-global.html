@@ -218,17 +218,35 @@
       line-height: 1.55;
     }
     .bot  .msg-bubble { background: var(--bot-bg); color: var(--text); border-bottom-left-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-    .bot .msg-bubble p { margin: 0 0 8px; }
+    .bot .msg-bubble p { margin: 0 0 10px; }
     .bot .msg-bubble p:last-child { margin-bottom: 0; }
-    .bot .msg-bubble ul, .bot .msg-bubble ol { margin: 4px 0 8px 18px; }
-    .bot .msg-bubble li { margin-bottom: 3px; }
-    .bot .msg-bubble strong { font-weight: 600; }
-    .bot .msg-bubble h1, .bot .msg-bubble h2, .bot .msg-bubble h3 { font-size: 14px; font-weight: 600; margin: 8px 0 4px; }
-    .bot .msg-bubble table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 13px; }
-    .bot .msg-bubble th { background: var(--magenta); color: #fff; font-weight: 600; padding: 7px 10px; text-align: left; }
-    .bot .msg-bubble td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
-    .bot .msg-bubble tr:last-child td { border-bottom: none; }
-    .bot .msg-bubble tr:nth-child(even) td { background: #F9F9F9; }
+    .bot .msg-bubble ul, .bot .msg-bubble ol { margin: 2px 0 12px; padding-left: 4px; list-style: none; }
+    .bot .msg-bubble li { margin-bottom: 6px; padding-left: 16px; position: relative; }
+    .bot .msg-bubble li:last-child { margin-bottom: 0; }
+    .bot .msg-bubble li::before { content: '\2022'; color: var(--magenta); font-weight: 700; position: absolute; left: 0; }
+    .bot .msg-bubble strong { font-weight: 700; color: inherit; }
+    .bot .msg-bubble h1, .bot .msg-bubble h2, .bot .msg-bubble h3 { font-weight: 700; margin: 14px 0 6px; color: var(--text); }
+    .bot .msg-bubble h1:first-child, .bot .msg-bubble h2:first-child, .bot .msg-bubble h3:first-child, .bot .msg-bubble .msg-section-title:first-child { margin-top: 0; }
+    .bot .msg-bubble h1 { font-size: 17px; }
+    .bot .msg-bubble h2 { font-size: 15px; }
+    .bot .msg-bubble h3 { font-size: 14px; }
+    .bot .msg-bubble .msg-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--magenta);
+      margin: 16px 0 8px;
+      padding-bottom: 5px;
+      border-bottom: 1.5px solid var(--border);
+    }
+    .bot .msg-bubble table { table-layout: fixed; border-collapse: separate; border-spacing: 0; width: 100%; margin: 10px 0; font-size: 12px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .bot .msg-bubble th { background: var(--magenta); color: #fff; font-weight: 600; padding: 7px 8px; text-align: left; overflow-wrap: break-word; }
+    .bot .msg-bubble td { padding: 7px 8px; border-top: 1px solid var(--border); overflow-wrap: break-word; }
+    .bot .msg-bubble th:first-child, .bot .msg-bubble td:first-child { width: 27%; }
+    .bot .msg-bubble th:last-child, .bot .msg-bubble td:last-child { width: 22%; overflow-wrap: anywhere; }
+    .bot .msg-bubble tr:first-child td { border-top: none; }
+    .bot .msg-bubble tr:nth-child(even) td { background: #FAFAFA; }
     .user .msg-bubble { background: var(--user-bg); color: var(--user-text); border-bottom-right-radius: 4px; }
 
     .msg-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
@@ -472,6 +490,37 @@
     }
     .meeting-item:hover { border-color: var(--magenta); background: #FFF5FA; }
 
+    /* ── BOTÃO FERRAMENTAS DE IA ── */
+    #btn-tools {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: none;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; color: var(--text-muted);
+      font-size: 16px;
+      transition: border-color .2s, color .2s;
+    }
+    #btn-tools:hover { border-color: var(--magenta); color: var(--magenta); }
+    #btn-tools[hidden] { display: none; }
+
+    .tools-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; max-width: 340px; }
+    .tool-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text);
+      text-align: left;
+      transition: border-color .15s, background .15s;
+    }
+    .tool-item:hover { border-color: var(--magenta); background: #FFF5FA; }
+
     /* ── PAINEL DE HISTÓRICO ── */
     #btn-history {
       background: rgba(255,255,255,.2);
@@ -655,6 +704,7 @@
       </svg>
     </button>
     <button id="btn-meetings" title="Reuniões" hidden>📅</button>
+    <button id="btn-tools" title="Ferramentas de IA" hidden>🛠️</button>
     <textarea id="msg-input" rows="1" placeholder="Digite sua mensagem..."></textarea>
     <button id="btn-send" title="Enviar">
       <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -687,6 +737,7 @@
   const LOGO      = 'MG';
   const CRM_ENABLED      = true;
   const MEETINGS_ENABLED = true;
+  const TOOLS_ENABLED    = false;
 
   let currentUser = null; // { id, name, email }
 
@@ -837,6 +888,7 @@
     document.getElementById('btn-logout').hidden = true;
     document.getElementById('btn-crm').hidden = true;
     document.getElementById('btn-meetings').hidden = true;
+    document.getElementById('btn-tools').hidden = true;
     closeCRMMenu();
     document.getElementById('header-user').textContent = '';
     inputEmail.value = '';
@@ -857,6 +909,7 @@
     document.getElementById('btn-logout').hidden = false;
     document.getElementById('btn-crm').hidden = !CRM_ENABLED;
     document.getElementById('btn-meetings').hidden = !MEETINGS_ENABLED;
+    document.getElementById('btn-tools').hidden = !TOOLS_ENABLED;
     document.getElementById('login-screen').hidden = true;
     document.getElementById('chat-screen').hidden = false;
     document.getElementById('msg-input').focus();
@@ -873,7 +926,7 @@
     return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 
-  function addMessage(role, text, sources, meetings) {
+  function addMessage(role, text, sources, meetings, tools) {
     const isUser = role === 'user';
     const initials = isUser
       ? currentUser.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
@@ -914,6 +967,23 @@
       wrapper.insertBefore(list, wrapper.querySelector('.msg-meta'));
     }
 
+    // Botões de ferramenta — mesmo padrão dos de reunião (DOM/textContent, sem onclick inline).
+    if (Array.isArray(tools) && tools.length > 0) {
+      const wrapper = row.lastElementChild;
+      const list = document.createElement('div');
+      list.className = 'tools-list';
+      tools.forEach(t => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tool-item';
+        const name = t.name || 'Ferramenta';
+        btn.textContent = '🛠️ ' + name;
+        btn.addEventListener('click', () => sendCRMCommand('__TOOLS:DETAIL:' + t.id + '__', 'Detalhe: ' + name));
+        list.appendChild(btn);
+      });
+      wrapper.insertBefore(list, wrapper.querySelector('.msg-meta'));
+    }
+
     messagesEl.insertBefore(row, typingIndicator);
     scrollToBottom();
   }
@@ -949,6 +1019,11 @@
         rows.forEach(r => { tbl += '<tr>' + r.map(c => '<td>' + inlineFormat(c) + '</td>').join('') + '</tr>'; });
         tbl += '</tbody></table>';
         out.push(tbl);
+      } else if (/^\s*\*\*(.+?)\*\*\s*$/.test(lines[i])) {
+        // Linha inteira em **negrito** vira título de seção com destaque (em vez de negrito solto no meio do texto).
+        const title = lines[i].match(/^\s*\*\*(.+?)\*\*\s*$/)[1];
+        out.push('<div class="msg-section-title">' + title + '</div>');
+        i++;
       } else {
         out.push(lines[i]);
         i++;
@@ -1000,7 +1075,7 @@
       const sid  = getSessionId(currentUser.id);
       const data = await apiCall('chat', { query, session_id: sid, user_id: currentUser.id, user_email: currentUser.email });
       setTyping(false);
-      addMessage('bot', data.answer || '(sem resposta)', data.sources, data.meetings);
+      addMessage('bot', data.answer || '(sem resposta)', data.sources, data.meetings, data.tools);
     } catch(e) {
       setTyping(false);
       showToast('Erro ao enviar mensagem. Tente novamente.');
@@ -1397,7 +1472,7 @@
         ...(extras || {})
       });
       setTyping(false);
-      addMessage('bot', data.answer || '(sem resposta)', data.sources, data.meetings);
+      addMessage('bot', data.answer || '(sem resposta)', data.sources, data.meetings, data.tools);
     } catch(e) {
       setTyping(false);
       showToast('Erro ao consultar CRM. Tente novamente.');
@@ -1408,6 +1483,9 @@
   document.getElementById('crm-menu-overlay').addEventListener('click', closeCRMMenu);
   document.getElementById('btn-meetings').addEventListener('click', () => {
     sendCRMCommand('__MEETINGS:LIST__', '📅 Ver reuniões disponíveis');
+  });
+  document.getElementById('btn-tools').addEventListener('click', () => {
+    sendCRMCommand('__TOOLS:LIST__', '🛠️ Ver ferramentas de IA aprovadas');
   });
 
   // ── INIT — verifica sessão salva ─────────────────────────────────────────────
