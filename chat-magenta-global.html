@@ -404,7 +404,11 @@
     #btn-send:disabled { background: #BDBDBD; cursor: default; transform: none; }
     #btn-send svg { width: 18px; height: 18px; fill: #fff; }
 
-    /* ── BOTÃO CRM ── */
+    /* ── BOTÃO CRM (RD Station) ── */
+    /* Sigla no lugar do ícone: com quatro botões redondos lado a lado, um
+       gráfico de barras e um alvo não dizem qual base cada um consulta. RD e MF
+       são como as duas fontes são chamadas no dia a dia. O title continua
+       trazendo o nome por extenso. */
     #btn-crm {
       width: 36px; height: 36px;
       border-radius: 50%;
@@ -413,10 +417,10 @@
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0; color: var(--text-muted);
+      font-size: 13px; font-weight: 700; letter-spacing: .3px;
       transition: border-color .2s, color .2s;
     }
     #btn-crm:hover { border-color: var(--magenta); color: var(--magenta); }
-    #btn-crm svg { width: 16px; height: 16px; }
     #btn-crm[hidden] { display: none; }
 
     /* ── MENU CRM ── */
@@ -532,7 +536,7 @@
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0; color: var(--text-muted);
-      font-size: 16px;
+      font-size: 13px; font-weight: 700; letter-spacing: .3px;
       transition: border-color .2s, color .2s;
     }
     #btn-magf:hover { border-color: var(--magenta); color: var(--magenta); }
@@ -737,14 +741,10 @@
         <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48"/>
       </svg>
     </button>
-    <button id="btn-crm" title="Menu CRM" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-      </svg>
-    </button>
+    <button id="btn-crm" title="RD Station — leads e tarefas" hidden>RD</button>
     <button id="btn-meetings" title="Reuniões" hidden>📅</button>
     <button id="btn-tools" title="Ferramentas de IA" hidden>🛠️</button>
-    <button id="btn-magf" title="Magenta Force" hidden>🎯</button>
+    <button id="btn-magf" title="Magenta Force — pipeline de vendas" hidden>MF</button>
     <textarea id="msg-input" rows="1" placeholder="Digite sua mensagem..."></textarea>
     <button id="btn-send" title="Enviar">
       <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -1511,9 +1511,9 @@
           <span class="crm-menu-icon">🎲</span>
           <span class="crm-menu-label">Forecast ponderado</span>
         </button>
-        <button class="crm-menu-item" onclick="magfCmd('CLOSING_BY_MONTH','Fechamentos por mês')">
+        <button class="crm-menu-item" onclick="magfCmd('CLOSING_LIST','Fechamentos previstos')">
           <span class="crm-menu-icon">📅</span>
-          <span class="crm-menu-label">Fechamentos por mês</span>
+          <span class="crm-menu-label">Fechamentos previstos (com data)</span>
         </button>
         <button class="crm-menu-item" onclick="magfCmd('BY_PROBABILITY','Pipeline por probabilidade')">
           <span class="crm-menu-icon">📈</span>
