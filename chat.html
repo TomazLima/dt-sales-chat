@@ -13,6 +13,10 @@
     :root {
       --magenta:      #E20074;
       --magenta-dark: #B50060;
+      /* Azul marinho do botão RD. A cor separa as duas fontes de dado no header:
+         RD Station em azul, Magenta Force no magenta da marca. */
+      --navy:         #002D72;
+      --navy-dark:    #001B47;
       --bg:           #F2F2F2;
       --surface:      #FFFFFF;
       --text:         #1A1A1A;
@@ -416,11 +420,14 @@
       border: 1.5px solid var(--border);
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; color: var(--text-muted);
+      flex-shrink: 0;
+      color: var(--navy); border-color: var(--navy);
       font-size: 13px; font-weight: 700; letter-spacing: .3px;
-      transition: border-color .2s, color .2s;
+      transition: border-color .2s, color .2s, background-color .2s;
     }
-    #btn-crm:hover { border-color: var(--magenta); color: var(--magenta); }
+    /* O hover não troca mais a cor (ela agora identifica a fonte): escurece e
+       preenche de leve, que é feedback suficiente. */
+    #btn-crm:hover { color: var(--navy-dark); border-color: var(--navy-dark); background: rgba(0, 45, 114, .08); }
     #btn-crm[hidden] { display: none; }
 
     /* ── MENU CRM ── */
@@ -535,11 +542,12 @@
       border: 1.5px solid var(--border);
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; color: var(--text-muted);
+      flex-shrink: 0;
+      color: var(--magenta); border-color: var(--magenta);
       font-size: 13px; font-weight: 700; letter-spacing: .3px;
-      transition: border-color .2s, color .2s;
+      transition: border-color .2s, color .2s, background-color .2s;
     }
-    #btn-magf:hover { border-color: var(--magenta); color: var(--magenta); }
+    #btn-magf:hover { color: var(--magenta-dark); border-color: var(--magenta-dark); background: rgba(226, 0, 116, .08); }
     /* Sem esta regra o display:flex do seletor de ID vence o [hidden] do UA
        stylesheet por especificidade e o botão aparece mesmo com MAGF_ENABLED=false. */
     #btn-magf[hidden] { display: none; }
