@@ -17,13 +17,28 @@
       --text-muted:   #6B6B6B;
       --border:       #E0E0E0;
       --radius:       16px;
+
+      /* Escala do miolo. Header e rodapé ficam em tamanho cheio; só o conteúdo
+         que rolaria encolhe. 90% é o suficiente para o caso comum (janela larga,
+         4 colunas). Em janela estreita a grade cai para 3 ou 2 colunas, o número
+         de linhas cresce e 90% já não basta — daí o degrau por altura abaixo. */
+      --ui-scale: .9;
     }
+    /* Notebook com escala do Windows em 125/150% chega a ~510px de viewport CSS:
+       é onde a barra aparecia mesmo com a página "cabendo" em 100%. */
+    @media (max-height: 700px) { :root { --ui-scale: .82; } }
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    /* A página ocupa EXATAMENTE a viewport e não rola: header e rodapé ficam
+       fixos nas pontas e, se a tela for baixa demais para os cards, quem ganha
+       barra é o miolo — nunca a janela inteira. Sem isso, qualquer sobra de
+       poucos pixels já acende a barra de rolagem do documento. */
+    html, body { height: 100%; }
     body {
       font-family: 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
-      min-height: 100dvh;
+      height: 100dvh;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
     }
@@ -31,7 +46,7 @@
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
+      padding: 14px 24px;
       display: flex;
       align-items: center;
       gap: 16px;
@@ -48,17 +63,27 @@
 
     main {
       flex: 1;
+      min-height: 0;      /* sem isso o flex item não encolhe e estoura a tela */
+      overflow-y: auto;
       width: 100%;
-      max-width: 1040px;
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 40px 24px 56px;
+      padding: 26px 24px 26px;
     }
-    .intro { margin-bottom: 28px; }
+    /* O zoom vai nos filhos do main, não no main nem no body: os dois têm altura
+       imposta pela viewport (100dvh / flex:1) e escalar o próprio box faria a
+       janela sobrar — exatamente a barra de rolagem que se quer eliminar.
+       .intro e .grid têm altura automática, então encolhem sem efeito colateral. */
+    .intro, .grid { zoom: var(--ui-scale); }
+
+    .intro { margin-bottom: 20px; }
     .intro h1 { font-size: 26px; font-weight: 600; margin-bottom: 6px; }
     .intro p  { font-size: 15px; color: var(--text-muted); }
 
-    /* auto-fill + minmax: 3 colunas no desktop, 2 no tablet, 1 no celular,
-       sem media query para cada faixa. */
+    /* 4 colunas de 280px em 1200px: os 7 cards fecham em 2 linhas, e a página
+       inteira cabe numa tela de notebook sem rolagem. Os cards mantêm o tamanho
+       original — o que encolheu foi o espaço em volta deles.
+       Cai para 3, 2 e 1 coluna sozinho conforme a largura. */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -93,7 +118,12 @@
     }
     .card-body { flex: 1; min-width: 0; }
     .card-body h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-    .card-body p  { font-size: 13px; color: var(--text-muted); line-height: 1.45; }
+    .card-body p  {
+      font-size: 13px; color: var(--text-muted); line-height: 1.45;
+      /* uma linha só: o subtítulo era o que fazia o card variar de 88 a 135px,
+         e card de altura variável quebra a conta de quantas linhas cabem. */
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
 
     .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
     .tag {
@@ -116,7 +146,7 @@
 
     footer {
       text-align: center;
-      padding: 20px;
+      padding: 14px;
       font-size: 12px;
       color: var(--text-muted);
       border-top: 1px solid var(--border);
