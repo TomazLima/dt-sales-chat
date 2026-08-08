@@ -1443,6 +1443,10 @@
       <button class="crm-menu-item" onclick="magfCmd('BY_SELLER','Magenta Force — pipeline por vendedor')">
         <span class="crm-menu-icon">🏆</span>
         <span class="crm-menu-label">Ranking por vendedor</span>
+      </button>
+      <button class="crm-menu-item" onclick="magfCmd('WIN_BY_SELLER','Win rate por vendedor')">
+        <span class="crm-menu-icon">🎯</span>
+        <span class="crm-menu-label">Win rate por vendedor</span>
       </button>` : '';
 
     menu.innerHTML = `
@@ -1490,18 +1494,36 @@
           <span class="crm-menu-icon">🏢</span>
           <span class="crm-menu-label">Por cliente</span>
         </button>
-        <button class="crm-menu-item" onclick="magfCmd('BY_PRODUCT','Pipeline por produto')">
-          <span class="crm-menu-icon">📦</span>
-          <span class="crm-menu-label">Por produto</span>
+        <button class="crm-menu-item" onclick="magfCmd('BY_BUSINESS_TYPE','Pipeline por tipo de negócio')">
+          <span class="crm-menu-icon">🔄</span>
+          <span class="crm-menu-label">Novo x recorrente</span>
+        </button>
+        <div class="crm-menu-divider"></div>
+        <button class="crm-menu-item" onclick="magfCmd('FORECAST','Forecast ponderado')">
+          <span class="crm-menu-icon">🎲</span>
+          <span class="crm-menu-label">Forecast ponderado</span>
+        </button>
+        <button class="crm-menu-item" onclick="magfCmd('CLOSING_BY_MONTH','Fechamentos por mês')">
+          <span class="crm-menu-icon">📅</span>
+          <span class="crm-menu-label">Fechamentos por mês</span>
+        </button>
+        <button class="crm-menu-item" onclick="magfCmd('BY_PROBABILITY','Pipeline por probabilidade')">
+          <span class="crm-menu-icon">📈</span>
+          <span class="crm-menu-label">Por probabilidade</span>
+        </button>
+        <div class="crm-menu-divider"></div>
+        <button class="crm-menu-item" onclick="magfCmd('OVERDUE','Fechamento vencido')">
+          <span class="crm-menu-icon">🚨</span>
+          <span class="crm-menu-label">Vencidos (ainda abertos)</span>
+        </button>
+        <button class="crm-menu-item" onclick="magfCmd('STALLED','Sem movimento há mais de 30 dias')">
+          <span class="crm-menu-icon">🕸️</span>
+          <span class="crm-menu-label">Parados há +30 dias</span>
         </button>
         <div class="crm-menu-divider"></div>
         <button class="crm-menu-item" onclick="magfCmd('WON_LOST','Ganhas x perdidas')">
           <span class="crm-menu-icon">⚖️</span>
           <span class="crm-menu-label">Ganhas x perdidas (win rate)</span>
-        </button>
-        <button class="crm-menu-item" onclick="magfCmd('LOST_REASONS','Motivos de perda')">
-          <span class="crm-menu-icon">📉</span>
-          <span class="crm-menu-label">Motivos de perda</span>
         </button>
         ${linhaGestor}
       </div>`;

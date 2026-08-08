@@ -31,7 +31,7 @@
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
+      padding: 12px 20px;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -46,33 +46,36 @@
     }
     .header-title { font-size: 16px; font-weight: 600; }
 
+    /* Compacto de propósito: os 7 cards devem caber numa tela de notebook (~768px
+       de altura útil) sem rolagem e sem recorrer a zoom < 100%, que borra a fonte
+       e atropela quem aumenta o texto por necessidade. */
     main {
       flex: 1;
       width: 100%;
-      max-width: 1040px;
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 40px 24px 56px;
+      padding: 24px 20px 28px;
     }
-    .intro { margin-bottom: 28px; }
-    .intro h1 { font-size: 26px; font-weight: 600; margin-bottom: 6px; }
-    .intro p  { font-size: 15px; color: var(--text-muted); }
+    .intro { margin-bottom: 18px; }
+    .intro h1 { font-size: 21px; font-weight: 600; margin-bottom: 3px; }
+    .intro p  { font-size: 13px; color: var(--text-muted); }
 
-    /* auto-fill + minmax: 3 colunas no desktop, 2 no tablet, 1 no celular,
-       sem media query para cada faixa. */
+    /* minmax 250px dentro de 1200px dá 4 colunas no desktop: 7 cards em 2 linhas.
+       Cai para 3, 2 e 1 coluna sozinho conforme a largura, sem media query. */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 12px;
     }
 
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 20px;
+      padding: 14px;
       display: flex;
       align-items: flex-start;
-      gap: 14px;
+      gap: 11px;
       text-decoration: none;
       color: inherit;
       transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
@@ -84,25 +87,25 @@
       outline: none;
     }
     .card-logo {
-      width: 48px; height: 48px;
+      width: 38px; height: 38px;
       background: var(--magenta);
-      border-radius: 12px;
+      border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      color: #fff; font-weight: 700; font-size: 17px;
+      color: #fff; font-weight: 700; font-size: 14px;
       flex-shrink: 0;
     }
     .card-body { flex: 1; min-width: 0; }
-    .card-body h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-    .card-body p  { font-size: 13px; color: var(--text-muted); line-height: 1.45; }
+    .card-body h2 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .card-body p  { font-size: 12px; color: var(--text-muted); line-height: 1.45; }
 
-    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
     .tag {
       font-size: 11px; font-weight: 500;
       color: var(--magenta);
       background: #FFF5FA;
       border: 1px solid #FFD9EC;
       border-radius: 999px;
-      padding: 3px 9px;
+      padding: 2px 7px;
       white-space: nowrap;
     }
 
@@ -116,8 +119,8 @@
 
     footer {
       text-align: center;
-      padding: 20px;
-      font-size: 12px;
+      padding: 12px;
+      font-size: 11px;
       color: var(--text-muted);
       border-top: 1px solid var(--border);
     }
