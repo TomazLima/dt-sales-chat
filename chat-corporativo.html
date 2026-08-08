@@ -45,7 +45,23 @@
       flex-shrink: 0;
       box-shadow: 0 2px 8px rgba(0,0,0,.15);
     }
-    .header-brand { display: flex; align-items: center; gap: 10px; }
+    /* O bloco da marca é um link para a capa (home.html). Discreto de propósito:
+       parece o cabeçalho de sempre e só revela o alvo no hover — não deve competir
+       com Histórico / Nova conversa / Sair, que são a ação principal do usuário. */
+    .header-brand {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: inherit;
+      border-radius: 8px; padding: 4px 8px; margin-left: -8px;
+      transition: background .15s ease;
+    }
+    .header-brand:hover, .header-brand:focus-visible {
+      background: rgba(255, 255, 255, .15);
+      outline: none;
+    }
+    .header-back {
+      font-size: 15px; opacity: .75;
+      margin-right: -2px;
+    }
     .header-logo {
       width: 32px; height: 32px;
       background: #fff;
@@ -507,6 +523,23 @@
     #btn-tools:hover { border-color: var(--magenta); color: var(--magenta); }
     #btn-tools[hidden] { display: none; }
 
+    /* ── BOTÃO MAGENTA FORCE ── */
+    #btn-magf {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: none;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; color: var(--text-muted);
+      font-size: 16px;
+      transition: border-color .2s, color .2s;
+    }
+    #btn-magf:hover { border-color: var(--magenta); color: var(--magenta); }
+    /* Sem esta regra o display:flex do seletor de ID vence o [hidden] do UA
+       stylesheet por especificidade e o botão aparece mesmo com MAGF_ENABLED=false. */
+    #btn-magf[hidden] { display: none; }
+
     .tools-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; max-width: 340px; }
     .tool-item {
       display: flex; align-items: center; gap: 10px;
@@ -614,10 +647,14 @@
 
 <!-- ── HEADER ───────────────────────────────────────────────── -->
 <header>
-  <div class="header-brand">
+  <!-- Caminho RELATIVO de propósito: o site é servido pelo GitHub Pages em
+       /dt-sales-chat/, um subdiretório. Um href="/index.html" absoluto apontaria
+       para tomazlima.github.io/index.html, fora do projeto. -->
+  <a class="header-brand" href="home.html" title="Ver todos os assistentes" aria-label="Voltar para a lista de assistentes">
+    <span class="header-back" aria-hidden="true">←</span>
     <div class="header-logo">CO</div>
     <span class="header-title">Corporativo</span>
-  </div>
+  </a>
   <div class="header-right">
     <span id="header-user"></span>
     <button id="btn-history" hidden>🕐 Histórico</button>
@@ -707,6 +744,7 @@
     </button>
     <button id="btn-meetings" title="Reuniões" hidden>📅</button>
     <button id="btn-tools" title="Ferramentas de IA" hidden>🛠️</button>
+    <button id="btn-magf" title="Magenta Force" hidden>🎯</button>
     <textarea id="msg-input" rows="1" placeholder="Digite sua mensagem..."></textarea>
     <button id="btn-send" title="Enviar">
       <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -740,6 +778,7 @@
   const CRM_ENABLED      = false;
   const MEETINGS_ENABLED = true;
   const TOOLS_ENABLED    = true;
+  const MAGF_ENABLED     = false;
 
   let currentUser = null; // { id, name, email }
 
@@ -891,6 +930,7 @@
     document.getElementById('btn-crm').hidden = true;
     document.getElementById('btn-meetings').hidden = true;
     document.getElementById('btn-tools').hidden = true;
+    document.getElementById('btn-magf').hidden = true;
     closeCRMMenu();
     document.getElementById('header-user').textContent = '';
     inputEmail.value = '';
@@ -912,6 +952,7 @@
     document.getElementById('btn-crm').hidden = !CRM_ENABLED;
     document.getElementById('btn-meetings').hidden = !MEETINGS_ENABLED;
     document.getElementById('btn-tools').hidden = !TOOLS_ENABLED;
+    document.getElementById('btn-magf').hidden = !MAGF_ENABLED;
     document.getElementById('login-screen').hidden = true;
     document.getElementById('chat-screen').hidden = false;
     document.getElementById('msg-input').focus();
@@ -1327,6 +1368,145 @@
     renderCRMMenu();
   }
 
+  // ── MENU MAGENTA FORCE ──────────────────────────────────────────────────────
+  // Reaproveita o overlay/painel do menu CRM (mesmas classes e closeCRMMenu),
+  // só troca o conteúdo. O backend filtra por vendedor a partir do e-mail do
+  // usuário logado — um vendedor comum vê apenas os próprios deals, e escolher
+  // outro vendedor no submenu só surte efeito para quem é gestor.
+  //
+  // A lista abaixo são os responsáveis que aparecem no Deal-Pivot. Rótulo é o
+  // próprio e-mail de propósito: não há mapa de nomes confiável para todos, e
+  // inventar nome geraria atribuição errada.
+  const MAGF_SELLERS = [
+    'alexandre.merheje@telekom.com',
+    'francisco.silva@telekom.com',
+    'gabriel.vilar@telekom.com',
+    'jorge.seiti@telekom.com',
+    'limaa@telekom.com',
+    'limag@telekom.com',
+    'nathan.gomes@telekom.com',
+    'vagner.moraes@telekom.com',
+    'rebekka.meyer@telekom.de'
+  ];
+
+  let magfMenuState = 'main';
+
+  function isMAGFManager() { return isCRMManager(); }
+
+  function openMAGFMenu() {
+    magfMenuState = 'main';
+    document.getElementById('crm-menu-overlay').classList.add('open');
+    document.getElementById('crm-menu').classList.add('open');
+    renderMAGFMenu();
+  }
+
+  function magfCmd(acao, rotulo, email) {
+    const extras = email ? { magf_seller_email: email } : {};
+    sendCRMCommand('__MAGF:' + acao + '__', rotulo, extras);
+  }
+
+  function renderMAGFMenu() {
+    const menu = document.getElementById('crm-menu');
+
+    if (magfMenuState === 'sellers') {
+      const itens = MAGF_SELLERS.map(function (e) {
+        return `
+          <button class="crm-menu-item" onclick="magfCmd('PIPELINE','Pipeline de ${e}','${e}')">
+            <span class="crm-menu-icon">👤</span>
+            <span class="crm-menu-label">${e}</span>
+          </button>`;
+      }).join('');
+
+      menu.innerHTML = `
+        <div class="crm-menu-header">
+          <span class="crm-menu-title">🎯 Pipeline de qual vendedor?</span>
+          <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
+        </div>
+        <div class="crm-menu-body">
+          <button class="crm-menu-item" onclick="magfMenuState='main';renderMAGFMenu()">
+            <span class="crm-menu-icon">‹</span>
+            <span class="crm-menu-label">Voltar</span>
+          </button>
+          <div class="crm-menu-divider"></div>
+          ${itens}
+        </div>`;
+      return;
+    }
+
+    const linhaGestor = isMAGFManager() ? `
+      <div class="crm-menu-divider"></div>
+      <button class="crm-menu-item" onclick="magfMenuState='sellers';renderMAGFMenu()">
+        <span class="crm-menu-icon">👥</span>
+        <span class="crm-menu-label">Ver pipeline de um vendedor</span>
+        <span class="crm-menu-arrow">›</span>
+      </button>
+      <button class="crm-menu-item" onclick="magfCmd('BY_SELLER','Magenta Force — pipeline por vendedor')">
+        <span class="crm-menu-icon">🏆</span>
+        <span class="crm-menu-label">Ranking por vendedor</span>
+      </button>` : '';
+
+    menu.innerHTML = `
+      <div class="crm-menu-header">
+        <span class="crm-menu-title">🎯 Magenta Force — o que deseja ver?</span>
+        <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
+      </div>
+      <div class="crm-menu-body">
+        <button class="crm-menu-item" onclick="magfCmd('MY_PIPELINE','Meu pipeline por etapa')">
+          <span class="crm-menu-icon">📊</span>
+          <span class="crm-menu-label">Meu pipeline por etapa</span>
+        </button>
+        <button class="crm-menu-item" onclick="magfCmd('CLOSING_7D','Fechamentos — próximos 7 dias')">
+          <span class="crm-menu-icon">🔔</span>
+          <span class="crm-menu-label">Fechando em 7 dias</span>
+        </button>
+        <button class="crm-menu-item" onclick="magfCmd('CLOSING_30D','Fechamentos — próximos 30 dias')">
+          <span class="crm-menu-icon">📆</span>
+          <span class="crm-menu-label">Fechando em 30 dias</span>
+        </button>
+        <button class="crm-menu-item" onclick="magfCmd('MY_CLOSING','Meus fechamentos — próximos 90 dias')">
+          <span class="crm-menu-icon">📅</span>
+          <span class="crm-menu-label">Meus fechamentos — 90 dias</span>
+        </button>
+        <div class="crm-menu-divider"></div>
+        <button class="crm-menu-item" onclick="magfCmd('CREATED_7D','Oportunidades criadas — últimos 7 dias')">
+          <span class="crm-menu-icon">🆕</span>
+          <span class="crm-menu-label">Criadas — últimos 7 dias</span>
+        </button>
+        <button class="crm-menu-item" onclick="magfCmd('CREATED_15D','Oportunidades criadas — últimos 15 dias')">
+          <span class="crm-menu-icon">🆕</span>
+          <span class="crm-menu-label">Criadas — últimos 15 dias</span>
+        </button>
+        <button class="crm-menu-item" onclick="magfCmd('CREATED_30D','Oportunidades criadas — últimos 30 dias')">
+          <span class="crm-menu-icon">🆕</span>
+          <span class="crm-menu-label">Criadas — último mês</span>
+        </button>
+        <div class="crm-menu-divider"></div>
+        <button class="crm-menu-item" onclick="magfCmd('TOP_DEALS','Maiores oportunidades abertas')">
+          <span class="crm-menu-icon">💰</span>
+          <span class="crm-menu-label">Maiores oportunidades</span>
+        </button>
+        <div class="crm-menu-divider"></div>
+        <button class="crm-menu-item" onclick="magfCmd('BY_CUSTOMER','Pipeline por cliente')">
+          <span class="crm-menu-icon">🏢</span>
+          <span class="crm-menu-label">Por cliente</span>
+        </button>
+        <button class="crm-menu-item" onclick="magfCmd('BY_PRODUCT','Pipeline por produto')">
+          <span class="crm-menu-icon">📦</span>
+          <span class="crm-menu-label">Por produto</span>
+        </button>
+        <div class="crm-menu-divider"></div>
+        <button class="crm-menu-item" onclick="magfCmd('WON_LOST','Ganhas x perdidas')">
+          <span class="crm-menu-icon">⚖️</span>
+          <span class="crm-menu-label">Ganhas x perdidas (win rate)</span>
+        </button>
+        <button class="crm-menu-item" onclick="magfCmd('LOST_REASONS','Motivos de perda')">
+          <span class="crm-menu-icon">📉</span>
+          <span class="crm-menu-label">Motivos de perda</span>
+        </button>
+        ${linhaGestor}
+      </div>`;
+  }
+
   function renderCRMMenu() {
     const menu = document.getElementById('crm-menu');
 
@@ -1494,6 +1674,7 @@
   document.getElementById('btn-tools').addEventListener('click', () => {
     sendCRMCommand('__TOOLS:LIST__', '🛠️ Ver ferramentas de IA aprovadas');
   });
+  document.getElementById('btn-magf').addEventListener('click', openMAGFMenu);
 
   // ── INIT — verifica sessão salva ─────────────────────────────────────────────
   (async () => {

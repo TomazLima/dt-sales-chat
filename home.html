@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assistentes DT Sales</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Mesmas variáveis do chat.html — a capa herda a identidade, não inventa. */
+    :root {
+      --magenta:      #E20074;
+      --magenta-dark: #B50060;
+      --bg:           #F2F2F2;
+      --surface:      #FFFFFF;
+      --text:         #1A1A1A;
+      --text-muted:   #6B6B6B;
+      --border:       #E0E0E0;
+      --radius:       16px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-logo {
+      width: 36px; height: 36px;
+      background: var(--magenta);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 15px;
+      flex-shrink: 0;
+    }
+    .header-title { font-size: 16px; font-weight: 600; }
+
+    main {
+      flex: 1;
+      width: 100%;
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 40px 24px 56px;
+    }
+    .intro { margin-bottom: 28px; }
+    .intro h1 { font-size: 26px; font-weight: 600; margin-bottom: 6px; }
+    .intro p  { font-size: 15px; color: var(--text-muted); }
+
+    /* auto-fill + minmax: 3 colunas no desktop, 2 no tablet, 1 no celular,
+       sem media query para cada faixa. */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+    .card:hover, .card:focus-visible {
+      border-color: var(--magenta);
+      box-shadow: 0 4px 16px rgba(226, 0, 116, .12);
+      transform: translateY(-2px);
+      outline: none;
+    }
+    .card-logo {
+      width: 48px; height: 48px;
+      background: var(--magenta);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 17px;
+      flex-shrink: 0;
+    }
+    .card-body { flex: 1; min-width: 0; }
+    .card-body h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .card-body p  { font-size: 13px; color: var(--text-muted); line-height: 1.45; }
+
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .tag {
+      font-size: 11px; font-weight: 500;
+      color: var(--magenta);
+      background: #FFF5FA;
+      border: 1px solid #FFD9EC;
+      border-radius: 999px;
+      padding: 3px 9px;
+      white-space: nowrap;
+    }
+
+    .card-arrow {
+      color: var(--border);
+      font-size: 18px;
+      align-self: center;
+      transition: color .15s ease, transform .15s ease;
+    }
+    .card:hover .card-arrow { color: var(--magenta); transform: translateX(3px); }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 600px) {
+      main { padding: 28px 16px 40px; }
+      .intro h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-logo">DT</div>
+    <span class="header-title">Assistentes DT Sales</span>
+  </header>
+
+  <main>
+    <div class="intro">
+      <h1>Escolha seu assistente</h1>
+      <p>Cada área tem seu próprio assistente, com login e base de conhecimento separados.</p>
+    </div>
+
+    <div class="grid">
+      <a class="card" href="chat.html">
+        <div class="card-logo">DT</div>
+        <div class="card-body">
+          <h2>DT Sales Assistant</h2>
+          <p>Leads do RD Station e pipeline do Magenta Force</p>
+          <div class="tags"><span class="tag">CRM</span><span class="tag">Magenta Force</span></div>
+        </div>
+        <div class="card-arrow" aria-hidden="true">→</div>
+      </a>
+      <a class="card" href="chat-massivos.html">
+        <div class="card-logo">MA</div>
+        <div class="card-body">
+          <h2>Massivos Assistant</h2>
+          <p>Acesse o Massivos Assistant</p>
+          <div class="tags"><span class="tag">CRM</span><span class="tag">Reuniões</span></div>
+        </div>
+        <div class="card-arrow" aria-hidden="true">→</div>
+      </a>
+      <a class="card" href="chat-aliancas.html">
+        <div class="card-logo">AL</div>
+        <div class="card-body">
+          <h2>Alianças Assistant</h2>
+          <p>Acesse o Alianças Assistant</p>
+          <div class="tags"><span class="tag">CRM</span><span class="tag">Reuniões</span></div>
+        </div>
+        <div class="card-arrow" aria-hidden="true">→</div>
+      </a>
+      <a class="card" href="chat-magenta-global.html">
+        <div class="card-logo">MG</div>
+        <div class="card-body">
+          <h2>Magenta Global</h2>
+          <p>Acesse o Magenta Global</p>
+          <div class="tags"><span class="tag">CRM</span><span class="tag">Reuniões</span><span class="tag">Magenta Force</span></div>
+        </div>
+        <div class="card-arrow" aria-hidden="true">→</div>
+      </a>
+      <a class="card" href="chat-magenta-local.html">
+        <div class="card-logo">ML</div>
+        <div class="card-body">
+          <h2>Magenta Local</h2>
+          <p>Acesse o Magenta Local</p>
+          <div class="tags"><span class="tag">CRM</span><span class="tag">Reuniões</span><span class="tag">Magenta Force</span></div>
+        </div>
+        <div class="card-arrow" aria-hidden="true">→</div>
+      </a>
+      <a class="card" href="chat-mvno.html">
+        <div class="card-logo">MV</div>
+        <div class="card-body">
+          <h2>MVNO Assistant</h2>
+          <p>Acesse o MVNO Assistant</p>
+          <div class="tags"><span class="tag">CRM</span><span class="tag">Reuniões</span></div>
+        </div>
+        <div class="card-arrow" aria-hidden="true">→</div>
+      </a>
+      <a class="card" href="chat-corporativo.html">
+        <div class="card-logo">CO</div>
+        <div class="card-body">
+          <h2>Corporativo</h2>
+          <p>Acesse o Corporativo</p>
+          <div class="tags"><span class="tag">Reuniões</span><span class="tag">Ferramentas</span></div>
+        </div>
+        <div class="card-arrow" aria-hidden="true">→</div>
+      </a>
+    </div>
+  </main>
+
+  <footer>Deutsche Telekom Brasil</footer>
+</body>
+</html>
