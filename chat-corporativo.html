@@ -13,10 +13,13 @@
     :root {
       --magenta:      #E20074;
       --magenta-dark: #B50060;
-      /* Azul marinho do botão RD. A cor separa as duas fontes de dado no header:
-         RD Station em azul, Magenta Force no magenta da marca. */
-      --navy:         #002D72;
-      --navy-dark:    #001B47;
+      /* Azul do botão RD. A cor separa as duas fontes de dado no header:
+         RD Station em azul, Magenta Force no magenta da marca.
+         Começou em #002D72 (marinho fechado) e subiu para cá: em texto de 13px
+         num círculo de 36px, aquele tom lia como preto — a cor só cumpre o papel
+         de distinguir se for reconhecível como azul à primeira vista. */
+      --navy:         #0B47B3;
+      --navy-dark:    #073387;
       --bg:           #F2F2F2;
       --surface:      #FFFFFF;
       --text:         #1A1A1A;
@@ -427,7 +430,7 @@
     }
     /* O hover não troca mais a cor (ela agora identifica a fonte): escurece e
        preenche de leve, que é feedback suficiente. */
-    #btn-crm:hover { color: var(--navy-dark); border-color: var(--navy-dark); background: rgba(0, 45, 114, .08); }
+    #btn-crm:hover { color: var(--navy-dark); border-color: var(--navy-dark); background: rgba(11, 71, 179, .10); }
     #btn-crm[hidden] { display: none; }
 
     /* ── MENU CRM ── */
