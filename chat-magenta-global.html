@@ -491,6 +491,23 @@
     .crm-menu-arrow { color: var(--text-muted); font-size: 16px; }
     .crm-menu-divider { height: 1px; background: var(--border); margin: 4px 0; }
 
+    /* Filtro de vendedor ativo, no topo do menu. Precisa saltar aos olhos: a
+       seleção PERSISTE entre aberturas do menu, e ler a carteira de uma pessoa
+       achando que é a do time é o erro que este aviso existe para evitar. */
+    .menu-filtro {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; margin: 8px 10px 4px; padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(226, 0, 116, .08);
+      border: 1px solid var(--magenta);
+    }
+    .menu-filtro-txt { font-size: 13px; font-weight: 600; color: var(--magenta); }
+    .menu-filtro-x {
+      background: none; border: none; cursor: pointer;
+      font-size: 11px; font-weight: 600; color: var(--magenta);
+      text-decoration: underline; padding: 2px 4px;
+    }
+
     /* Cabeçalho de bloco dentro do menu (usado pelo PB, que tem 18 itens em
        quatro grupos — sem a separação vira uma lista longa e indistinta). */
     .crm-menu-section {
@@ -1400,7 +1417,10 @@
 
   function openCRMMenu() {
     crmMenuState = 'main';
-    crmSelectedSeller = null;
+    // A seleção de vendedor PERSISTE entre aberturas (Anderson, 19/08): escolhe
+    // uma vez e todas as opções valem para essa pessoa, até trocar ou limpar.
+    // Antes, `crmSelectedSeller = null` aqui zerava a cada abertura e obrigava
+    // a repetir a escolha para cada consulta.
     document.getElementById('crm-menu-overlay').classList.add('open');
     document.getElementById('crm-menu').classList.add('open');
     renderCRMMenu();
@@ -1413,8 +1433,40 @@
 
   function crmSelectSeller(i) {
     crmSelectedSeller = CRM_SELLERS[i];
-    crmMenuState = 'period';
+    // Volta ao menu completo, agora recortado nessa pessoa — em vez de abrir
+    // uma tela separada com um subconjunto das opções, que era o desenho antigo
+    // e obrigava a escolher de novo a cada consulta.
+    crmMenuState = 'main';
     renderCRMMenu();
+  }
+
+  function crmClearSeller() {
+    crmSelectedSeller = null;
+    renderCRMMenu();
+  }
+
+  // Comando do menu RD, ciente do vendedor fixado.
+  //
+  // TAREFAS e CRIAR LEAD ficam SEMPRE com o usuário logado, mesmo com alguém
+  // selecionado: é decisão de produto de 10/07 — gestor não vê a agenda alheia
+  // — e o backend já a impõe (`isTasks ? myId`). Aqui o rótulo também não pode
+  // sugerir o contrário, senão a tela promete o que o servidor nega.
+  const CRM_SEMPRE_MINHAS = ['TASKS_TODAY', 'TASKS_WEEK', 'CREATE_LEAD'];
+
+  function crmCmd(acao, rotulo) {
+    const s = crmSelectedSeller;
+    if (!s || CRM_SEMPRE_MINHAS.indexOf(acao) !== -1) {
+      return sendCRMCommand('__CRM:' + acao + '__', rotulo, {});
+    }
+    // "Minhas atualizações — 7 dias" com o Jorge fixado deve ler
+    // "Atualizações de Jorge Seiti — 7 dias".
+    const rot = rotulo
+      .replace(/^Minhas?\s+/i, '')
+      .replace(/^Meus?\s+/i, '')
+      .replace(/^Ver meu\s+/i, '')
+      .replace(/^./, function (c) { return c.toUpperCase(); }) + ' — ' + s.name;
+    sendCRMCommand('__CRM:' + acao + '__', rot,
+      { crmSellerId: s.id, crmSellerName: s.name });
   }
 
   // ── MENU MAGENTA FORCE ──────────────────────────────────────────────────────
@@ -1480,9 +1532,30 @@
     renderPBMenu();
   }
 
-  function pbCmd(acao, rotulo, email) {
-    const extras = email ? { pb_seller_email: email } : {};
-    sendCRMCommand('__PB:' + acao + '__', rotulo, extras);
+  // Seleção de colaborador PERSISTENTE (Anderson, 19/08): escolhe uma vez e
+  // todas as opções passam a valer para essa pessoa, até trocar ou limpar.
+  //
+  // O comando LÊ `pbSeller` em vez de cada botão carregar o e-mail. Isso evita
+  // manter duas versões do menu (uma com pessoa, outra sem) — que foi como
+  // estava e já duplicava a lista de blocos, com o risco de as duas divergirem
+  // na próxima ação nova.
+  let pbSeller = null;
+
+  function pbCmd(acao, rotulo) {
+    const extras = pbSeller ? { pb_seller_email: pbSeller.email } : {};
+    const rot = pbSeller ? rotulo + ' — ' + pbSeller.name : rotulo;
+    sendCRMCommand('__PB:' + acao + '__', rot, extras);
+  }
+
+  function pbSelectSeller(i) {
+    pbSeller = PB_SELLERS[i];
+    pbMenuState = 'main';
+    renderPBMenu();
+  }
+
+  function pbClearSeller() {
+    pbSeller = null;
+    renderPBMenu();
   }
 
   // Quatro blocos, na ordem em que o CIO pergunta: o que aconteceu na semana,
@@ -1549,7 +1622,8 @@
     const blocos = PB_BLOCOS.map(function (b) {
       const itens = b[1].map(function (a) {
         // O rótulo vai como texto da mensagem do usuário no chat, então precisa
-        // ler bem sozinho no histórico.
+        // ler bem sozinho no histórico. O nome da pessoa é acrescentado pelo
+        // pbCmd, que sabe quem está selecionado.
         return `
           <button class="crm-menu-item" onclick="pbCmd('${a[0]}','${a[1]}')">
             <span class="crm-menu-icon">▸</span>
@@ -1559,49 +1633,30 @@
       return `<div class="crm-menu-section">${b[0]}</div>${itens}`;
     }).join('<div class="crm-menu-divider"></div>');
 
+    // Filtro ativo em destaque no topo: sem isso alguém escolhe uma pessoa,
+    // fecha o menu, reabre depois e não lembra que ainda está filtrado — e lê
+    // a carteira de um como se fosse a do time.
+    const filtro = pbSeller ? `
+      <div class="menu-filtro">
+        <span class="menu-filtro-txt">👤 ${pbSeller.name}</span>
+        <button class="menu-filtro-x" onclick="pbClearSeller()" title="Ver o time inteiro">ver todos ✕</button>
+      </div>
+      <div class="crm-menu-divider"></div>` : '';
+
     menu.innerHTML = `
       <div class="crm-menu-header">
         <span class="crm-menu-title">PB — Painel estratégico</span>
         <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
       </div>
       <div class="crm-menu-body">
+        ${filtro}
         ${blocos}
         <div class="crm-menu-divider"></div>
         <button class="crm-menu-item" onclick="pbMenuState='sellers';renderPBMenu()">
           <span class="crm-menu-icon">👥</span>
-          <span class="crm-menu-label">Ver por colaborador</span>
+          <span class="crm-menu-label">${pbSeller ? 'Trocar de colaborador' : 'Ver por colaborador'}</span>
           <span class="crm-menu-arrow">›</span>
         </button>
-      </div>`;
-  }
-
-  // Ao escolher alguém, repete o menu completo — as mesmas perguntas, agora
-  // recortadas nessa pessoa. É o desenho que o Anderson pediu para o menu RD.
-  function pbSelectSeller(i) {
-    const s = PB_SELLERS[i];
-    const menu = document.getElementById('crm-menu');
-    const blocos = PB_BLOCOS.map(function (b) {
-      const itens = b[1].map(function (a) {
-        return `
-          <button class="crm-menu-item" onclick="pbCmd('${a[0]}','${a[1]} — ${s.name}','${s.email || ''}')">
-            <span class="crm-menu-icon">▸</span>
-            <span class="crm-menu-label">${a[1]}</span>
-          </button>`;
-      }).join('');
-      return `<div class="crm-menu-section">${b[0]}</div>${itens}`;
-    }).join('<div class="crm-menu-divider"></div>');
-
-    menu.innerHTML = `
-      <div class="crm-menu-header">
-        <span class="crm-menu-title">PB — ${s.name}</span>
-        <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
-      </div>
-      <div class="crm-menu-body">
-        <button class="crm-menu-item" onclick="pbMenuState='sellers';renderPBMenu()">
-          <span class="crm-menu-icon">‹</span><span class="crm-menu-label">Voltar</span>
-        </button>
-        <div class="crm-menu-divider"></div>
-        ${blocos}
       </div>`;
   }
 
@@ -1612,9 +1667,45 @@
     renderMAGFMenu();
   }
 
-  function magfCmd(acao, rotulo, email) {
-    const extras = email ? { magf_seller_email: email } : {};
-    sendCRMCommand('__MAGF:' + acao + '__', rotulo, extras);
+  // Vendedor escolhido FICA escolhido (Anderson, 19/08): antes, clicar num nome
+  // disparava direto o PIPELINE daquela pessoa e acabava ali — para ver os
+  // fechamentos dela era preciso voltar, escolher de novo, e não havia como.
+  // Agora a escolha fixa o recorte e TODAS as opções do menu passam a valer
+  // para ela, até trocar ou limpar.
+  let magfSeller = null;
+
+  // As ações MY_* forçam o escopo do usuário logado no backend, de propósito —
+  // "meu pipeline" é meu mesmo, nem gestor vê o dos outros por elas. Com um
+  // vendedor fixado isso vira armadilha: "Meu pipeline aberto" traria a carteira
+  // de quem clicou, não a do Jorge, e a tela pareceria dele. Por isso, com
+  // seleção ativa, cada MY_* é trocada pela irmã que aceita alvo.
+  const MAGF_EQUIV = {
+    MY_OPEN: 'OPEN_LIST',
+    MY_PIPELINE: 'PIPELINE',
+    MY_CLOSING: 'CLOSING_90D',
+    MY_CLOSING_MONTH: 'CLOSING_MONTH'
+  };
+
+  function magfCmd(acao, rotulo) {
+    if (!magfSeller) return sendCRMCommand('__MAGF:' + acao + '__', rotulo, {});
+    const alvo = MAGF_EQUIV[acao] || acao;
+    // "Meu pipeline aberto" com o Jorge selecionado deve ler "Pipeline aberto
+    // — jorge.seiti@...", não "Meu pipeline aberto — jorge.seiti@...".
+    const rot = rotulo.replace(/^(Meu|Meus|Minha|Minhas)\s+/i, function (m) {
+      return m.charAt(0) === m.charAt(0).toUpperCase() ? '' : '';
+    }).replace(/^./, function (c) { return c.toUpperCase(); }) + ' — ' + magfSeller;
+    sendCRMCommand('__MAGF:' + alvo + '__', rot, { magf_seller_email: magfSeller });
+  }
+
+  function magfSelectSeller(e) {
+    magfSeller = e;
+    magfMenuState = 'main';
+    renderMAGFMenu();
+  }
+
+  function magfClearSeller() {
+    magfSeller = null;
+    renderMAGFMenu();
   }
 
   function renderMAGFMenu() {
@@ -1622,9 +1713,10 @@
 
     if (magfMenuState === 'sellers') {
       const itens = MAGF_SELLERS.map(function (e) {
+        const sel = (e === magfSeller) ? ' style="font-weight:700"' : '';
         return `
-          <button class="crm-menu-item" onclick="magfCmd('PIPELINE','Pipeline de ${e}','${e}')">
-            <span class="crm-menu-icon">👤</span>
+          <button class="crm-menu-item" onclick="magfSelectSeller('${e}')"${sel}>
+            <span class="crm-menu-icon">${e === magfSeller ? '✓' : '👤'}</span>
             <span class="crm-menu-label">${e}</span>
           </button>`;
       }).join('');
@@ -1645,11 +1737,20 @@
       return;
     }
 
+    // Filtro ativo em destaque: sem isto alguém escolhe uma pessoa, fecha o
+    // menu, reabre depois e lê a carteira de um como se fosse a do time.
+    const filtroMagf = magfSeller ? `
+      <div class="menu-filtro">
+        <span class="menu-filtro-txt">👤 ${magfSeller}</span>
+        <button class="menu-filtro-x" onclick="magfClearSeller()" title="Ver o time inteiro">ver todos ✕</button>
+      </div>
+      <div class="crm-menu-divider"></div>` : '';
+
     const linhaGestor = isMAGFManager() ? `
       <div class="crm-menu-divider"></div>
       <button class="crm-menu-item" onclick="magfMenuState='sellers';renderMAGFMenu()">
         <span class="crm-menu-icon">👥</span>
-        <span class="crm-menu-label">Ver pipeline de um vendedor</span>
+        <span class="crm-menu-label">${magfSeller ? 'Trocar de vendedor' : 'Ver pipeline de um vendedor'}</span>
         <span class="crm-menu-arrow">›</span>
       </button>
       <button class="crm-menu-item" onclick="magfCmd('BY_SELLER','Magenta Force — pipeline por vendedor')">
@@ -1667,6 +1768,7 @@
         <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
       </div>
       <div class="crm-menu-body">
+        ${filtroMagf}
         <button class="crm-menu-item" onclick="magfCmd('MY_OPEN','Meu pipeline aberto')">
           <span class="crm-menu-icon">📋</span>
           <span class="crm-menu-label">Meu pipeline aberto</span>
@@ -1757,9 +1859,20 @@
         <div class="crm-menu-divider"></div>
         <button class="crm-menu-item" onclick="crmMenuState='sellers';renderCRMMenu()">
           <span class="crm-menu-icon">👥</span>
-          <span class="crm-menu-label">Ver leads da equipe</span>
+          <span class="crm-menu-label">${crmSelectedSeller ? 'Trocar de vendedor' : 'Ver leads da equipe'}</span>
           <span class="crm-menu-arrow">›</span>
         </button>` : '';
+
+      // Filtro ativo: a seleção sobrevive ao fechar do menu, então precisa
+      // estar visível — senão lê-se a carteira de um como se fosse a do time.
+      // O aviso sobre tarefas está aqui porque elas continuam sendo as SUAS
+      // mesmo com alguém selecionado, e isso surpreenderia sem explicação.
+      const filtroCrm = crmSelectedSeller ? `
+        <div class="menu-filtro">
+          <span class="menu-filtro-txt">👤 ${crmSelectedSeller.name}</span>
+          <button class="menu-filtro-x" onclick="crmClearSeller()" title="Voltar para os meus">ver os meus ✕</button>
+        </div>
+        <div class="crm-menu-divider"></div>` : '';
 
       menu.innerHTML = `
         <div class="crm-menu-header">
@@ -1767,55 +1880,56 @@
           <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
         </div>
         <div class="crm-menu-items">
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_7D__','Minhas atualizações — últimos 7 dias')">
+          ${filtroCrm}
+          <button class="crm-menu-item" onclick="crmCmd('LEADS_7D','Minhas atualizações — últimos 7 dias')">
             <span class="crm-menu-icon">📋</span>
             <span class="crm-menu-label">Minhas atualizações — últimos 7 dias</span>
           </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_15D__','Minhas atualizações — últimos 15 dias')">
+          <button class="crm-menu-item" onclick="crmCmd('LEADS_15D','Minhas atualizações — últimos 15 dias')">
             <span class="crm-menu-icon">📋</span>
             <span class="crm-menu-label">Minhas atualizações — últimos 15 dias</span>
           </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_30D__','Minhas atualizações — último mês')">
+          <button class="crm-menu-item" onclick="crmCmd('LEADS_30D','Minhas atualizações — último mês')">
             <span class="crm-menu-icon">📋</span>
             <span class="crm-menu-label">Minhas atualizações — último mês</span>
           </button>
           <div class="crm-menu-divider"></div>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_7D__','Meus leads criados — últimos 7 dias')">
+          <button class="crm-menu-item" onclick="crmCmd('LEADS_CREATED_7D','Meus leads criados — últimos 7 dias')">
             <span class="crm-menu-icon">🆕</span>
             <span class="crm-menu-label">Meus leads criados — últimos 7 dias</span>
           </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_15D__','Meus leads criados — últimos 15 dias')">
+          <button class="crm-menu-item" onclick="crmCmd('LEADS_CREATED_15D','Meus leads criados — últimos 15 dias')">
             <span class="crm-menu-icon">🆕</span>
             <span class="crm-menu-label">Meus leads criados — últimos 15 dias</span>
           </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_30D__','Meus leads criados — último mês')">
+          <button class="crm-menu-item" onclick="crmCmd('LEADS_CREATED_30D','Meus leads criados — último mês')">
             <span class="crm-menu-icon">🆕</span>
             <span class="crm-menu-label">Meus leads criados — último mês</span>
           </button>
           <div class="crm-menu-divider"></div>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:GROWTH_WW__','Crescimento semana a semana')">
+          <button class="crm-menu-item" onclick="crmCmd('GROWTH_WW','Crescimento semana a semana')">
             <span class="crm-menu-icon">📈</span>
             <span class="crm-menu-label">Crescimento semana a semana</span>
           </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:FUNNEL__','Ver meu funil completo')">
+          <button class="crm-menu-item" onclick="crmCmd('FUNNEL','Ver meu funil completo')">
             <span class="crm-menu-icon">🔽</span>
             <span class="crm-menu-label">Ver meu funil completo</span>
           </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:ALERT_NO_OPP__','Pre Sales sem Nº Oportunidade')">
+          <button class="crm-menu-item" onclick="crmCmd('ALERT_NO_OPP','Pre Sales sem Nº Oportunidade')">
             <span class="crm-menu-icon">⚠️</span>
             <span class="crm-menu-label">Pre Sales sem Nº Oportunidade</span>
           </button>
           <div class="crm-menu-divider"></div>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:TASKS_TODAY__','Minhas tarefas de hoje')">
+          <button class="crm-menu-item" onclick="crmCmd('TASKS_TODAY','Minhas tarefas de hoje')">
             <span class="crm-menu-icon">✅</span>
             <span class="crm-menu-label">Minhas tarefas — hoje</span>
           </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:TASKS_WEEK__','Minhas tarefas desta semana')">
+          <button class="crm-menu-item" onclick="crmCmd('TASKS_WEEK','Minhas tarefas desta semana')">
             <span class="crm-menu-icon">🗓️</span>
             <span class="crm-menu-label">Minhas tarefas — esta semana</span>
           </button>
           <div class="crm-menu-divider"></div>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:CREATE_LEAD__','Criar novo lead')">
+          <button class="crm-menu-item" onclick="crmCmd('CREATE_LEAD','Criar novo lead')">
             <span class="crm-menu-icon">➕</span>
             <span class="crm-menu-label">Criar novo lead</span>
           </button>
@@ -1825,7 +1939,7 @@
     } else if (crmMenuState === 'sellers') {
       const items = CRM_SELLERS.map((s, i) => `
         <button class="crm-menu-item" onclick="crmSelectSeller(${i})">
-          <span class="crm-menu-icon">👤</span>
+          <span class="crm-menu-icon">${crmSelectedSeller && crmSelectedSeller.id === s.id ? '✓' : '👤'}</span>
           <span class="crm-menu-label">${s.name}</span>
           <span class="crm-menu-arrow">›</span>
         </button>`).join('');
@@ -1838,54 +1952,6 @@
         </div>
         <div class="crm-menu-items">${items}</div>`;
 
-    } else if (crmMenuState === 'period') {
-      const s = crmSelectedSeller;
-      menu.innerHTML = `
-        <div class="crm-menu-header">
-          <button class="crm-menu-back visible" onclick="crmMenuState='sellers';renderCRMMenu()">‹</button>
-          <span class="crm-menu-title">${s.name}</span>
-          <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
-        </div>
-        <div class="crm-menu-items">
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_7D__','Atualizações de ${s.name} — 7 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
-            <span class="crm-menu-icon">📋</span>
-            <span class="crm-menu-label">Atualizações — 7 dias</span>
-          </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_15D__','Atualizações de ${s.name} — 15 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
-            <span class="crm-menu-icon">📋</span>
-            <span class="crm-menu-label">Atualizações — 15 dias</span>
-          </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_30D__','Atualizações de ${s.name} — mês',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
-            <span class="crm-menu-icon">📋</span>
-            <span class="crm-menu-label">Atualizações — último mês</span>
-          </button>
-          <div class="crm-menu-divider"></div>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_7D__','Leads criados de ${s.name} — 7 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
-            <span class="crm-menu-icon">🆕</span>
-            <span class="crm-menu-label">Criados — 7 dias</span>
-          </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_15D__','Leads criados de ${s.name} — 15 dias',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
-            <span class="crm-menu-icon">🆕</span>
-            <span class="crm-menu-label">Criados — 15 dias</span>
-          </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:LEADS_CREATED_30D__','Leads criados de ${s.name} — mês',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
-            <span class="crm-menu-icon">🆕</span>
-            <span class="crm-menu-label">Criados — último mês</span>
-          </button>
-          <div class="crm-menu-divider"></div>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:GROWTH_WW__','Crescimento de ${s.name} — semana a semana',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
-            <span class="crm-menu-icon">📈</span>
-            <span class="crm-menu-label">Crescimento semana a semana</span>
-          </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:FUNNEL__','Funil de ${s.name}',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
-            <span class="crm-menu-icon">🔽</span>
-            <span class="crm-menu-label">Funil completo</span>
-          </button>
-          <button class="crm-menu-item" onclick="sendCRMCommand('__CRM:ALERT_NO_OPP__','Pre Sales sem Nº Oportunidade — ${s.name}',{crmSellerId:'${s.id}',crmSellerName:'${s.name}'})">
-            <span class="crm-menu-icon">⚠️</span>
-            <span class="crm-menu-label">Pre Sales sem Nº Oportunidade</span>
-          </button>
-        </div>`;
     }
   }
 
