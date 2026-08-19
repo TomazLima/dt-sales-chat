@@ -379,6 +379,10 @@
     }
     #btn-attach:hover { border-color: var(--magenta); color: var(--magenta); }
     #btn-attach svg { width: 16px; height: 16px; }
+    /* Obrigatória: o seletor de ID acima define display, que vence o [hidden]
+       do UA stylesheet por especificidade — mesma armadilha dos botões do
+       header, já documentada. Sem isto ATTACH_ENABLED=false não esconde nada. */
+    #btn-attach[hidden] { display: none; }
     #file-input { display: none; }
     #msg-input {
       flex: 1;
@@ -840,6 +844,11 @@
   const TOOLS_ENABLED    = false;
   const MAGF_ENABLED     = false;
   const PB_ENABLED       = false;
+  // Anexo (clipe): lê o arquivo no browser e embute o texto na pergunta. Só faz
+  // sentido onde o chat conversa sobre DOCUMENTOS. No dt-sales, que virou chat
+  // só de funil, o anexo caía no RAG e recebia "não tenho acesso a documentos
+  // de produto" — o recurso existia na tela sem ter como funcionar.
+  const ATTACH_ENABLED   = true;
 
   let currentUser = null; // { id, name, email }
 
@@ -1219,6 +1228,11 @@
   const attachName     = document.getElementById('attach-name');
   const btnAttach      = document.getElementById('btn-attach');
   const btnRemoveAttach = document.getElementById('btn-remove-attach');
+
+  // Esconde o clipe onde o chat não conversa sobre documentos. Só a tela: o
+  // roteador também trata anexo por conta própria (scripts/fix-anexo-roteamento.js),
+  // porque texto colado à mão com o mesmo prefixo continua chegando ao backend.
+  btnAttach.hidden = !ATTACH_ENABLED;
 
   btnAttach.addEventListener('click', () => fileInput.click());
 
