@@ -491,6 +491,15 @@
     .crm-menu-arrow { color: var(--text-muted); font-size: 16px; }
     .crm-menu-divider { height: 1px; background: var(--border); margin: 4px 0; }
 
+    /* Cabeçalho de bloco dentro do menu (usado pelo PB, que tem 18 itens em
+       quatro grupos — sem a separação vira uma lista longa e indistinta). */
+    .crm-menu-section {
+      padding: 10px 12px 4px;
+      font-size: 11px; font-weight: 700; letter-spacing: .4px;
+      text-transform: uppercase;
+      color: var(--text-soft, #6B7280);
+    }
+
     /* ── BOTÃO REUNIÕES / LISTA DE REUNIÕES ── */
     #btn-meetings {
       width: 36px; height: 36px;
@@ -554,6 +563,28 @@
     /* Sem esta regra o display:flex do seletor de ID vence o [hidden] do UA
        stylesheet por especificidade e o botão aparece mesmo com MAGF_ENABLED=false. */
     #btn-magf[hidden] { display: none; }
+
+    /* ── BOTÃO PB (perguntas estratégicas) ──
+       Terceira fonte no header. Cor própria — cinza-grafite — porque as duas
+       existentes identificam BASE (azul = RD Station, magenta = Magenta Force)
+       e o PB cruza as duas: pintá-lo de uma delas sugeriria que consulta só
+       aquela. */
+    #btn-pb {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: none;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      color: #3D4A5C; border-color: #3D4A5C;
+      font-size: 13px; font-weight: 700; letter-spacing: .3px;
+      transition: border-color .2s, color .2s, background-color .2s;
+    }
+    #btn-pb:hover { color: #253242; border-color: #253242; background: rgba(61, 74, 92, .08); }
+    /* Obrigatória: sem ela o display:flex do seletor de ID vence o [hidden] do
+       UA stylesheet por especificidade e o botão aparece com PB_ENABLED=false. */
+    #btn-pb[hidden] { display: none; }
 
     .tools-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; max-width: 340px; }
     .tool-item {
@@ -756,6 +787,7 @@
     <button id="btn-meetings" title="Reuniões" hidden>📅</button>
     <button id="btn-tools" title="Ferramentas de IA" hidden>🛠️</button>
     <button id="btn-magf" title="Magenta Force — pipeline de vendas" hidden>MF</button>
+    <button id="btn-pb" title="Painel estratégico — RD Station + Magenta Force" hidden>PB</button>
     <textarea id="msg-input" rows="1" placeholder="Digite sua mensagem..."></textarea>
     <button id="btn-send" title="Enviar">
       <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -790,6 +822,7 @@
   const MEETINGS_ENABLED = false;
   const TOOLS_ENABLED    = false;
   const MAGF_ENABLED     = true;
+  const PB_ENABLED       = true;
 
   let currentUser = null; // { id, name, email }
 
@@ -942,6 +975,7 @@
     document.getElementById('btn-meetings').hidden = true;
     document.getElementById('btn-tools').hidden = true;
     document.getElementById('btn-magf').hidden = true;
+    document.getElementById('btn-pb').hidden = true;
     closeCRMMenu();
     document.getElementById('header-user').textContent = '';
     inputEmail.value = '';
@@ -964,6 +998,10 @@
     document.getElementById('btn-meetings').hidden = !MEETINGS_ENABLED;
     document.getElementById('btn-tools').hidden = !TOOLS_ENABLED;
     document.getElementById('btn-magf').hidden = !MAGF_ENABLED;
+    // O PB é painel de gestão: só aparece para quem tem acesso geral. Esconder
+    // é conveniência de tela — quem é gestor o backend decide sozinho, pela
+    // lista MANAGERS do Detect CRM Intent.
+    document.getElementById('btn-pb').hidden = !(PB_ENABLED && isCRMManager());
     document.getElementById('login-screen').hidden = true;
     document.getElementById('chat-screen').hidden = false;
     document.getElementById('msg-input').focus();
@@ -1404,6 +1442,167 @@
 
   function isMAGFManager() { return isCRMManager(); }
 
+  // ── MENU PB — perguntas estratégicas ────────────────────────────────────────
+  // Reaproveita o overlay do menu CRM (mesmas classes e closeCRMMenu), só troca
+  // o conteúdo — mesmo padrão do menu Magenta Force.
+  //
+  // Toda resposta vem em TABELA: o formatador do subworkflow não decide isso,
+  // está fixo. Ver plano-pb-perguntas-estrategicas-2026-08-18.md.
+  let pbMenuState = 'main';
+
+  // Vendedores do PB: nome + e-mail, porque o filtro do painel é por
+  // `vendedor_email` (as views expõem o canônico, já resolvido por alias — o
+  // Nathan tem dois cadastros no RD e os dois caem aqui no mesmo).
+  //
+  // Não dá para reusar CRM_SELLERS: aquela lista carrega o `id` do RD Station,
+  // que é outra chave. E a ordem abaixo é por pipeline ABERTO, não alfabética —
+  // quem tem carteira viva aparece primeiro, que é como o painel é usado.
+  // Extraída do banco em 18/08; quem está com 0 em aberto ficou de fora
+  // (André Bravo, Juliano, Felipe Ferracin, Andreia Rosa) para não abrir tela
+  // vazia — as oportunidades fechadas deles continuam nos totais do time.
+  const PB_SELLERS = [
+    { name: 'Arthur Lima',      email: 'limaa@telekom.com' },
+    { name: 'Alexandre Merheje', email: 'alexandre.merheje@telekom.com' },
+    { name: 'Francisco Carlos', email: 'francisco.silva@telekom.com' },
+    { name: 'Nathan Gomes',     email: 'nathan.gomes@telekom.com' },
+    { name: 'Gabriel Vilar',    email: 'gabriel.vilar@telekom.com' },
+    { name: 'Vagner Moraes',    email: 'vagner.moraes@telekom.com' },
+    { name: 'Gabriel Lima',     email: 'limag@telekom.com' },
+    { name: 'Jorge Seiti',      email: 'jorge.seiti@telekom.com' },
+    { name: 'Renato Cavallari', email: 'renato.cavallari@telekom.com' },
+    { name: 'Rebekka Meyer',    email: 'rebekka.meyer@telekom.de' }
+  ];
+
+  function openPBMenu() {
+    pbMenuState = 'main';
+    document.getElementById('crm-menu-overlay').classList.add('open');
+    document.getElementById('crm-menu').classList.add('open');
+    renderPBMenu();
+  }
+
+  function pbCmd(acao, rotulo, email) {
+    const extras = email ? { pb_seller_email: email } : {};
+    sendCRMCommand('__PB:' + acao + '__', rotulo, extras);
+  }
+
+  // Quatro blocos, na ordem em que o CIO pergunta: o que aconteceu na semana,
+  // o que vai fechar, quem está com o quê, e o que está entrando no funil.
+  const PB_BLOCOS = [
+    ['📅 Resultado da semana', [
+      ['PROPOSTAS_SEMANA', 'Propostas enviadas na semana'],
+      ['WIN_SEMANA',       'Ganhas na semana'],
+      ['LOST_SEMANA',      'Perdidas na semana'],
+      ['GANHAS_ANO',       'Ganhas no ano, por vendedor']
+    ]],
+    ['🎯 Previsão e confiança', [
+      ['POR_CONFIDENCE', 'Pipeline por Deal Confidence'],
+      ['RECEITA_MUSTBE', 'Receita dos Must Be — 2 anos'],
+      ['TOP5_MUSTBE',    'Top 5 Must Be de cada vendedor'],
+      ['ABERTOS_ANO',    'Fecha neste ano, por vendedor'],
+      ['TABELA_MESTRE',  'Visão consolidada (TCV, OE, receita)']
+    ]],
+    ['👤 Carteira', [
+      ['VENDEDOR_ABERTOS',  'Abertos do ano, por confiança e valor'],
+      ['VENDEDOR_TOP10',    'Top 10 oportunidades'],
+      ['VENDEDOR_CLIENTES', 'Pipeline por cliente'],
+      ['VENDEDOR_RESUMO',   'Resumo por vendedor'],
+      ['PRESALES',          'Em Pre Sales Design']
+    ]],
+    ['📥 Entrada de funil', [
+      ['PROSPECCAO',       'Prospecção por vendedor'],
+      ['LEADS_PRIORIDADE', 'Leads do mês por prioridade'],
+      ['LEADS_ORIGEM',     'Leads do mês por origem'],
+      ['NEW_BUSINESS',     'New x Existing Business']
+    ]]
+  ];
+
+  function renderPBMenu() {
+    const menu = document.getElementById('crm-menu');
+
+    // Escolher colaborador: as mesmas perguntas, recortadas em uma pessoa.
+    if (pbMenuState === 'sellers') {
+      const itens = PB_SELLERS.map(function (s, i) {
+        return `
+          <button class="crm-menu-item" onclick="pbSelectSeller(${i})">
+            <span class="crm-menu-icon">👤</span>
+            <span class="crm-menu-label">${s.name}</span>
+            <span class="crm-menu-arrow">›</span>
+          </button>`;
+      }).join('');
+      menu.innerHTML = `
+        <div class="crm-menu-header">
+          <span class="crm-menu-title">Painel de qual colaborador?</span>
+          <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
+        </div>
+        <div class="crm-menu-body">
+          <button class="crm-menu-item" onclick="pbMenuState='main';renderPBMenu()">
+            <span class="crm-menu-icon">‹</span><span class="crm-menu-label">Voltar</span>
+          </button>
+          <div class="crm-menu-divider"></div>
+          ${itens}
+        </div>`;
+      return;
+    }
+
+    const blocos = PB_BLOCOS.map(function (b) {
+      const itens = b[1].map(function (a) {
+        // O rótulo vai como texto da mensagem do usuário no chat, então precisa
+        // ler bem sozinho no histórico.
+        return `
+          <button class="crm-menu-item" onclick="pbCmd('${a[0]}','${a[1]}')">
+            <span class="crm-menu-icon">▸</span>
+            <span class="crm-menu-label">${a[1]}</span>
+          </button>`;
+      }).join('');
+      return `<div class="crm-menu-section">${b[0]}</div>${itens}`;
+    }).join('<div class="crm-menu-divider"></div>');
+
+    menu.innerHTML = `
+      <div class="crm-menu-header">
+        <span class="crm-menu-title">PB — Painel estratégico</span>
+        <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
+      </div>
+      <div class="crm-menu-body">
+        ${blocos}
+        <div class="crm-menu-divider"></div>
+        <button class="crm-menu-item" onclick="pbMenuState='sellers';renderPBMenu()">
+          <span class="crm-menu-icon">👥</span>
+          <span class="crm-menu-label">Ver por colaborador</span>
+          <span class="crm-menu-arrow">›</span>
+        </button>
+      </div>`;
+  }
+
+  // Ao escolher alguém, repete o menu completo — as mesmas perguntas, agora
+  // recortadas nessa pessoa. É o desenho que o Anderson pediu para o menu RD.
+  function pbSelectSeller(i) {
+    const s = PB_SELLERS[i];
+    const menu = document.getElementById('crm-menu');
+    const blocos = PB_BLOCOS.map(function (b) {
+      const itens = b[1].map(function (a) {
+        return `
+          <button class="crm-menu-item" onclick="pbCmd('${a[0]}','${a[1]} — ${s.name}','${s.email || ''}')">
+            <span class="crm-menu-icon">▸</span>
+            <span class="crm-menu-label">${a[1]}</span>
+          </button>`;
+      }).join('');
+      return `<div class="crm-menu-section">${b[0]}</div>${itens}`;
+    }).join('<div class="crm-menu-divider"></div>');
+
+    menu.innerHTML = `
+      <div class="crm-menu-header">
+        <span class="crm-menu-title">PB — ${s.name}</span>
+        <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
+      </div>
+      <div class="crm-menu-body">
+        <button class="crm-menu-item" onclick="pbMenuState='sellers';renderPBMenu()">
+          <span class="crm-menu-icon">‹</span><span class="crm-menu-label">Voltar</span>
+        </button>
+        <div class="crm-menu-divider"></div>
+        ${blocos}
+      </div>`;
+  }
+
   function openMAGFMenu() {
     magfMenuState = 'main';
     document.getElementById('crm-menu-overlay').classList.add('open');
@@ -1716,6 +1915,7 @@
     sendCRMCommand('__TOOLS:LIST__', '🛠️ Ver ferramentas de IA aprovadas');
   });
   document.getElementById('btn-magf').addEventListener('click', openMAGFMenu);
+  document.getElementById('btn-pb').addEventListener('click', openPBMenu);
 
   // ── INIT — verifica sessão salva ─────────────────────────────────────────────
   (async () => {
