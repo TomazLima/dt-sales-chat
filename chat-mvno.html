@@ -1748,10 +1748,17 @@
     sendCRMCommand('__MAGF:' + alvo + '__', rot, extras);
   }
 
+  // Selecionar o vendedor já entrega o painel completo dele — decisão de
+  // 18/08, aplicada em 20/08. Antes disso o clique só marcava o filtro e
+  // devolvia ao menu, esperando o gestor escolher uma das ações avulsas
+  // (o que existia era "pipeline por etapa", 3 linhas). `magfCmd` fecha o
+  // menu sozinho (via sendCRMCommand) e o filtro continua ativo depois —
+  // as ações avulsas do menu (Fechando em 7 dias, Vencidos, etc.) seguem
+  // disponíveis pra quem quiser um recorte mais específico do mesmo vendedor.
   function magfSelectSeller(e) {
     magfSeller = e;
     magfMenuState = 'main';
-    renderMAGFMenu();
+    magfCmd('VENDOR_PANEL', 'Painel completo');
   }
 
   function magfClearSeller() {
@@ -1804,6 +1811,17 @@
       </div>
       <div class="crm-menu-divider"></div>` : '';
 
+    // Vendedor comum não acessa o seletor de vendedor (linhaGestor abaixo),
+    // então precisa de uma porta direta pro próprio painel completo — pro
+    // gestor essa mesma tela já é alcançável selecionando o próprio nome na
+    // lista de "Ver pipeline de um vendedor".
+    const botaoPainelProprio = !isMAGFManager() ? `
+      <button class="crm-menu-item" onclick="magfCmd('VENDOR_PANEL','Meu painel completo')">
+        <span class="crm-menu-icon">📊</span>
+        <span class="crm-menu-label">Meu painel completo</span>
+      </button>
+      <div class="crm-menu-divider"></div>` : '';
+
     const linhaGestor = isMAGFManager() ? `
       <div class="crm-menu-divider"></div>
       <button class="crm-menu-item" onclick="magfMenuState='sellers';renderMAGFMenu()">
@@ -1827,6 +1845,7 @@
       </div>
       <div class="crm-menu-body">
         ${filtroMagf}
+        ${botaoPainelProprio}
         <button class="crm-menu-item" onclick="magfCmd('MY_OPEN','Pipeline aberto')">
           <span class="crm-menu-icon">📋</span>
           <span class="crm-menu-label">Pipeline aberto</span>
