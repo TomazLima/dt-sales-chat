@@ -450,19 +450,26 @@
       bottom: 74px;
       left: 50%; transform: translateX(-50%);
       width: min(420px, calc(100vw - 32px));
+      /* Sem isto o painel crescia para CIMA sem limite — com o PB (20+ itens em
+         5 blocos) o topo passava do topo da tela e a primeira opção ficava
+         inacessível sem dar zoom out (reportado pelo Anderson, 20/08). Trava a
+         altura e deixa o CONTEÚDO rolar por dentro; o cabeçalho fica fixo. */
+      max-height: min(70vh, calc(100vh - 140px));
       background: var(--surface);
       border-radius: var(--radius);
       box-shadow: 0 -4px 24px rgba(0,0,0,.16);
       z-index: 301;
       overflow: hidden;
       display: none;
+      flex-direction: column;
     }
-    #crm-menu.open { display: block; }
+    #crm-menu.open { display: flex; }
 
     .crm-menu-header {
       display: flex; align-items: center; gap: 8px;
       padding: 14px 16px 12px;
       border-bottom: 1px solid var(--border);
+      flex-shrink: 0; /* fica fixo; quem rola é o conteúdo abaixo */
     }
     .crm-menu-back {
       background: none; border: none; cursor: pointer;
@@ -477,7 +484,16 @@
     }
     .crm-menu-close:hover { color: var(--text); }
 
-    .crm-menu-items { padding: 6px 0; }
+    /* .crm-menu-items (RD) e .crm-menu-body (MF/PB) são as duas classes de
+       conteúdo usadas pelos diferentes renderXXXMenu — as duas precisam rolar,
+       já que qualquer uma pode ter mais itens do que cabe no max-height acima.
+       min-height:0 é necessário para o filho de um flex container conseguir
+       encolher e rolar de verdade, em vez de estourar o pai. */
+    .crm-menu-items, .crm-menu-body {
+      padding: 6px 0;
+      overflow-y: auto;
+      min-height: 0;
+    }
 
     .crm-menu-item {
       display: flex; align-items: center; gap: 12px;
@@ -1602,6 +1618,10 @@
       ['LEADS_PRIORIDADE', 'Leads do mês — prioridade e colaborador'],
       ['LEADS_ORIGEM',     'Leads do mês por origem'],
       ['NEW_BUSINESS',     'New x Existing Business']
+    ]],
+    ['✅ Tarefas', [
+      ['TAREFAS_HOJE',    'Tarefas do time — hoje'],
+      ['TAREFAS_SEMANA',  'Tarefas do time — esta semana']
     ]]
   ];
 
@@ -1610,10 +1630,17 @@
 
     // Escolher colaborador: as mesmas perguntas, recortadas em uma pessoa.
     if (pbMenuState === 'sellers') {
-      const itens = PB_SELLERS.map(function (s, i) {
+      // "Todos" na mesma lista (Anderson, 20/08) — mesma ideia do RD e do MF.
+      const itemTodos = `
+        <button class="crm-menu-item" onclick="pbClearSeller();pbMenuState='main';renderPBMenu()">
+          <span class="crm-menu-icon">${pbSeller ? '👥' : '✓'}</span>
+          <span class="crm-menu-label"><strong>Todos</strong></span>
+        </button>
+        <div class="crm-menu-divider"></div>`;
+      const itens = itemTodos + PB_SELLERS.map(function (s, i) {
         return `
           <button class="crm-menu-item" onclick="pbSelectSeller(${i})">
-            <span class="crm-menu-icon">👤</span>
+            <span class="crm-menu-icon">${pbSeller && pbSeller.email === s.email ? '✓' : '👤'}</span>
             <span class="crm-menu-label">${s.name}</span>
             <span class="crm-menu-arrow">›</span>
           </button>`;
@@ -1726,7 +1753,14 @@
     const menu = document.getElementById('crm-menu');
 
     if (magfMenuState === 'sellers') {
-      const itens = MAGF_SELLERS.map(function (e) {
+      // "Todos" na mesma lista (Anderson, 20/08) — mesma ideia do RD.
+      const itemTodos = `
+        <button class="crm-menu-item" onclick="magfClearSeller();magfMenuState='main';renderMAGFMenu()">
+          <span class="crm-menu-icon">${magfSeller ? '👥' : '✓'}</span>
+          <span class="crm-menu-label"><strong>Todos</strong></span>
+        </button>
+        <div class="crm-menu-divider"></div>`;
+      const itens = itemTodos + MAGF_SELLERS.map(function (e) {
         const sel = (e === magfSeller) ? ' style="font-weight:700"' : '';
         return `
           <button class="crm-menu-item" onclick="magfSelectSeller('${e}')"${sel}>
@@ -1951,6 +1985,14 @@
         </div>`;
 
     } else if (crmMenuState === 'sellers') {
+      // "Todos" na mesma lista, sem sair dela para limpar a seleção (Anderson,
+      // 20/08) — antes só dava para limpar pelo chip no topo do menu principal.
+      const itemTodos = `
+        <button class="crm-menu-item" onclick="crmClearSeller();crmMenuState='main';renderCRMMenu()">
+          <span class="crm-menu-icon">${crmSelectedSeller ? '👥' : '✓'}</span>
+          <span class="crm-menu-label"><strong>Todos</strong></span>
+        </button>
+        <div class="crm-menu-divider"></div>`;
       const items = CRM_SELLERS.map((s, i) => `
         <button class="crm-menu-item" onclick="crmSelectSeller(${i})">
           <span class="crm-menu-icon">${crmSelectedSeller && crmSelectedSeller.id === s.id ? '✓' : '👤'}</span>
@@ -1964,7 +2006,7 @@
           <span class="crm-menu-title">Selecione o vendedor</span>
           <button class="crm-menu-close" onclick="closeCRMMenu()">✕</button>
         </div>
-        <div class="crm-menu-items">${items}</div>`;
+        <div class="crm-menu-items">${itemTodos}${items}</div>`;
 
     }
   }
