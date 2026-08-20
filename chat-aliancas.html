@@ -29,6 +29,7 @@
       --user-bg:      #E20074;
       --user-text:    #FFFFFF;
       --radius:       16px;
+      --danger:       #C0362C;
     }
 
     body {
@@ -267,11 +268,17 @@
       padding-bottom: 5px;
       border-bottom: 1.5px solid var(--border);
     }
-    .bot .msg-bubble table { table-layout: auto; border-collapse: separate; border-spacing: 0; width: 100%; margin: 10px 0; font-size: 12px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-    .bot .msg-bubble th { background: var(--magenta); color: #fff; font-weight: 600; padding: 7px 8px; text-align: left; overflow-wrap: anywhere; }
-    .bot .msg-bubble td { padding: 7px 8px; border-top: 1px solid var(--border); overflow-wrap: anywhere; }
+    /* Tabelas largas (10+ colunas no PB) espremiam número contra a largura da
+       bolha (75vw) e o overflow-wrap: anywhere quebrava valor no meio do
+       dígito — feio e difícil de ler. Em vez de encolher a tabela, ela cresce
+       no tamanho natural do conteúdo e a rolagem fica só no wrapper. */
+    .bot .msg-bubble .msg-table-wrap { overflow-x: auto; margin: 10px 0; -webkit-overflow-scrolling: touch; }
+    .bot .msg-bubble table { table-layout: auto; border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; margin: 0; font-size: 12px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .bot .msg-bubble th { background: var(--magenta); color: #fff; font-weight: 600; padding: 7px 8px; text-align: left; white-space: nowrap; }
+    .bot .msg-bubble td { padding: 7px 8px; border-top: 1px solid var(--border); white-space: nowrap; }
     .bot .msg-bubble tr:first-child td { border-top: none; }
     .bot .msg-bubble tr:nth-child(even) td { background: #FAFAFA; }
+    .bot .msg-bubble .cell-danger { color: var(--danger); font-weight: 700; }
     .user .msg-bubble { background: var(--user-bg); color: var(--user-text); border-bottom-right-radius: 4px; }
 
     .msg-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
@@ -1152,7 +1159,7 @@
         let tbl = '<table><thead><tr>' + headers.map(h => '<th>' + inlineFormat(h) + '</th>').join('') + '</tr></thead><tbody>';
         rows.forEach(r => { tbl += '<tr>' + r.map(c => '<td>' + inlineFormat(c) + '</td>').join('') + '</tr>'; });
         tbl += '</tbody></table>';
-        out.push(tbl);
+        out.push('<div class="msg-table-wrap">' + tbl + '</div>');
       } else if (/^\s*\*\*(.+?)\*\*\s*$/.test(lines[i])) {
         // Linha inteira em **negrito** vira título de seção com destaque (em vez de negrito solto no meio do texto).
         const title = lines[i].match(/^\s*\*\*(.+?)\*\*\s*$/)[1];
@@ -1182,7 +1189,10 @@
   }
 
   function inlineFormat(s) {
+    // !!texto!! vira célula em vermelho — usado pelo PB para marcar
+    // inconsistência entre Confiança e Prob. fech. (%) numa mesma linha.
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/!!(.*?)!!/g,'<span class="cell-danger">$1</span>')
             .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
             .replace(/\*(.*?)\*/g,'<em>$1</em>');
   }
@@ -1715,11 +1725,15 @@
   // para ela, até trocar ou limpar.
   let magfSeller = null;
 
-  // As ações MY_* forçam o escopo do usuário logado no backend, de propósito —
-  // "meu pipeline" é meu mesmo, nem gestor vê o dos outros por elas. Com um
-  // vendedor fixado isso vira armadilha: "Meu pipeline aberto" traria a carteira
-  // de quem clicou, não a do Jorge, e a tela pareceria dele. Por isso, com
-  // seleção ativa, cada MY_* é trocada pela irmã que aceita alvo.
+  // As ações MY_* forçam o escopo do usuário logado no backend incondicional-
+  // mente — nem "Todos" nem um vendedor escolhido mudam isso, porque no
+  // Build SQL do MAGF `forcaProprio` ignora `escolhido`. Isso é exatamente o
+  // oposto do que se quer nestes 4 botões (Anderson, 20/08): com "Todos" ou
+  // um vendedor selecionado, o clique tem que seguir a seleção, não travar
+  // no próprio usuário. Por isso magfCmd SEMPRE troca a ação MY_* pela irmã
+  // que aceita alvo (MAGF_EQUIV) — a ação genérica já faz o certo sozinha:
+  // gestor sem seleção vê o time, com seleção vê a pessoa, vendedor comum
+  // (sem seletor) sempre vê só o próprio.
   const MAGF_EQUIV = {
     MY_OPEN: 'OPEN_LIST',
     MY_PIPELINE: 'PIPELINE',
@@ -1728,14 +1742,10 @@
   };
 
   function magfCmd(acao, rotulo) {
-    if (!magfSeller) return sendCRMCommand('__MAGF:' + acao + '__', rotulo, {});
     const alvo = MAGF_EQUIV[acao] || acao;
-    // "Meu pipeline aberto" com o Jorge selecionado deve ler "Pipeline aberto
-    // — jorge.seiti@...", não "Meu pipeline aberto — jorge.seiti@...".
-    const rot = rotulo.replace(/^(Meu|Meus|Minha|Minhas)\s+/i, function (m) {
-      return m.charAt(0) === m.charAt(0).toUpperCase() ? '' : '';
-    }).replace(/^./, function (c) { return c.toUpperCase(); }) + ' — ' + magfSeller;
-    sendCRMCommand('__MAGF:' + alvo + '__', rot, { magf_seller_email: magfSeller });
+    const rot = magfSeller ? (rotulo + ' — ' + magfSeller) : rotulo;
+    const extras = magfSeller ? { magf_seller_email: magfSeller } : {};
+    sendCRMCommand('__MAGF:' + alvo + '__', rot, extras);
   }
 
   function magfSelectSeller(e) {
@@ -1817,15 +1827,15 @@
       </div>
       <div class="crm-menu-body">
         ${filtroMagf}
-        <button class="crm-menu-item" onclick="magfCmd('MY_OPEN','Meu pipeline aberto')">
+        <button class="crm-menu-item" onclick="magfCmd('MY_OPEN','Pipeline aberto')">
           <span class="crm-menu-icon">📋</span>
-          <span class="crm-menu-label">Meu pipeline aberto</span>
+          <span class="crm-menu-label">Pipeline aberto</span>
         </button>
-        <button class="crm-menu-item" onclick="magfCmd('MY_PIPELINE','Meu pipeline por etapa')">
+        <button class="crm-menu-item" onclick="magfCmd('MY_PIPELINE','Pipeline por etapa')">
           <span class="crm-menu-icon">📊</span>
-          <span class="crm-menu-label">Meu pipeline por etapa</span>
+          <span class="crm-menu-label">Pipeline por etapa</span>
         </button>
-        <button class="crm-menu-item" onclick="magfCmd('MY_CLOSING_MONTH','Meus fechamentos do mês')">
+        <button class="crm-menu-item" onclick="magfCmd('MY_CLOSING_MONTH','Fechando neste mês')">
           <span class="crm-menu-icon">🗓️</span>
           <span class="crm-menu-label">Fechando neste mês</span>
         </button>
@@ -1837,9 +1847,9 @@
           <span class="crm-menu-icon">📆</span>
           <span class="crm-menu-label">Fechando em 30 dias</span>
         </button>
-        <button class="crm-menu-item" onclick="magfCmd('MY_CLOSING','Meus fechamentos — próximos 90 dias')">
+        <button class="crm-menu-item" onclick="magfCmd('MY_CLOSING','Fechamentos — 90 dias')">
           <span class="crm-menu-icon">📅</span>
-          <span class="crm-menu-label">Meus fechamentos — 90 dias</span>
+          <span class="crm-menu-label">Fechamentos — 90 dias</span>
         </button>
         <div class="crm-menu-divider"></div>
         <button class="crm-menu-item" onclick="magfCmd('CREATED_7D','Oportunidades criadas — últimos 7 dias')">
